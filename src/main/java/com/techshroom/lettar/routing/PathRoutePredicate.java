@@ -108,7 +108,6 @@ public class PathRoutePredicate {
         private static final Splitter SINGLE_COLON_SPLIT = Splitter.on(':').limit(2);
 
         private final List<String> parts;
-        private int index;
 
         RouteParser(String route) {
             this.parts = Splitter.on('/').splitToList(route);
@@ -120,8 +119,11 @@ public class PathRoutePredicate {
             BitSet capturing = new BitSet(parts.size());
 
             boolean hasEndChomp = false;
-            while (index < parts.size()) {
-                String part = parts.get(index);
+            for (String part : parts) {
+                if (part.length() == 0) {
+                    // discard!
+                    continue;
+                }
                 if (part.charAt(0) == '{' && part.charAt(part.length() - 1) == '}') {
                     // capturing!
                     capturing.set(numParts);
@@ -178,7 +180,7 @@ public class PathRoutePredicate {
         this.parts = ImmutableList.copyOf(parts);
         this.capturing = (BitSet) capturing.clone();
     }
-    
+
     public int getNumberOfCapturedParts() {
         return capturing.cardinality();
     }
@@ -187,16 +189,38 @@ public class PathRoutePredicate {
         ImmutableList.Builder<String> p = ImmutableList.builder();
         int index = 0;
         for (int i = 0; i < parts.size(); i++) {
+            if (index >= path.size()) {
+                // we ran out of parts before path, we don't match
+                return MatchResult.fail();
+            }
             int nextIndex = parts.get(i).consume(path, index);
+            nextIndex = Math.min(nextIndex, path.size());
             if (nextIndex <= index) {
-                // failure
+                // part didn't match, failure
                 return MatchResult.fail();
             }
             if (capturing.get(i)) {
                 p.add(String.join("/", path.subList(index, nextIndex)));
             }
+            index = nextIndex;
+        }
+        if (index < path.size()) {
+            // we didn't match a full path, so no match
+            return MatchResult.fail();
         }
         return MatchResult.success(p.build());
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < parts.size(); i++) {
+            boolean cap = capturing.get(i);
+            if (cap) {
+                sb.append('{');
+            }
+        }
+        return sb.toString();
     }
 
 }

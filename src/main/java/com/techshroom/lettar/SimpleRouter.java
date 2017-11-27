@@ -1,5 +1,6 @@
 package com.techshroom.lettar;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 
@@ -48,7 +49,7 @@ public class SimpleRouter<IB, OB> implements Router<IB, OB> {
     private static final MethodHandle EMPTY_404_HANDLER;
     static {
         try {
-            EMPTY_404_HANDLER = makeNotFoundHandler(SimpleRouter.class.getMethod("empty404Reponse"));
+            EMPTY_404_HANDLER = makeNotFoundHandler(SimpleRouter.class.getMethod("empty404Response"), null);
         } catch (Exception e) {
             throw new AssertionError(e);
         }
@@ -58,6 +59,10 @@ public class SimpleRouter<IB, OB> implements Router<IB, OB> {
         return SimpleResponse.builder().statusCode(404).build();
     }
 
+    public static <IB, OB> SimpleRouter<IB, OB> create() {
+        return new SimpleRouter<>();
+    }
+
     // method handles must be (LRequest;LExceptionParam;)LResponse;
     private final Map<Class<?>, MethodHandle> exceptionHandlers = new HashMap<>();
     // method handles must be (LRequest;)LResponse;
@@ -65,6 +70,9 @@ public class SimpleRouter<IB, OB> implements Router<IB, OB> {
     // method handles must be (LRequest;[LObject;)LResponse;
     // the array is the length of the parameters :D
     private final RouteMap<MethodHandle> routes = new RouteMap<>();
+
+    private SimpleRouter() {
+    }
 
     @Override
     public void registerRoutes(Iterable<?> routes) {
@@ -79,25 +87,25 @@ public class SimpleRouter<IB, OB> implements Router<IB, OB> {
             }
             Route route = method.getAnnotation(Route.class);
             if (route != null) {
-                addRoute(route, method);
+                addRoute(route, method, routeContainer);
                 continue;
             }
 
             NotFoundHandler notFoundAnnot = method.getAnnotation(NotFoundHandler.class);
             if (notFoundAnnot != null) {
-                notFoundHandler = makeNotFoundHandler(method);
+                notFoundHandler = makeNotFoundHandler(method, routeContainer);
                 continue;
             }
 
             ServerErrorHandler errorAnnot = method.getAnnotation(ServerErrorHandler.class);
             if (errorAnnot != null) {
-                addServerErrorHandlers(errorAnnot.exception(), method);
+                addServerErrorHandlers(errorAnnot.exception(), method, routeContainer);
                 continue;
             }
         }
     }
 
-    private void addRoute(Route route, Method method) {
+    private void addRoute(Route route, Method method, Object container) {
         HttpMethodPredicate methodPredicate = HttpMethodPredicate.of(route.method());
         ImmutableSet<PathRoutePredicate> pathPredicate = Stream.of(route.path())
                 .map(PathRoutePredicate::parse)
@@ -116,19 +124,21 @@ public class SimpleRouter<IB, OB> implements Router<IB, OB> {
                     numCaps, pred.getNumberOfCapturedParts());
         }
 
-        MethodHandle resolvedHandle = safeUnreflect(method);
+        MethodHandle base = safeUnreflect(method);
 
-        resolvedHandle = SRMethodHandles.routeTransform(resolvedHandle, numCaps, method.getName());
+        base = SRMethodHandles.fillThisParam(base, container);
+        base = SRMethodHandles.routeTransform(base, numCaps, method.getName());
 
-        routes.addRuntimeRoute(RuntimeRoute.of(methodPredicate, pathPredicate, params, headers, resolvedHandle));
+        routes.addRuntimeRoute(RuntimeRoute.of(methodPredicate, pathPredicate, params, headers, base));
     }
 
-    private static MethodHandle makeNotFoundHandler(Method method) {
+    private static MethodHandle makeNotFoundHandler(Method method, Object container) {
         MethodHandle base = safeUnreflect(method);
+        base = SRMethodHandles.fillThisParam(base, container);
         return SRMethodHandles.notFoundHandlerTransform(base, method.getName());
     }
 
-    private void addServerErrorHandlers(Class<? extends Throwable>[] exception, Method method) {
+    private void addServerErrorHandlers(Class<? extends Throwable>[] exception, Method method, Object container) {
         Set<Class<?>> exceptions = ImmutableSet.copyOf(exception);
         Map<Class<?>, Integer> parameterIndexes = new HashMap<>();
         int p = -1;
@@ -141,20 +151,27 @@ public class SimpleRouter<IB, OB> implements Router<IB, OB> {
                 // stick it in the map too
                 parameterIndexes.put(Request.class, 0);
                 continue;
+            } else {
+                // adjust for injected request parameter
+                p++;
             }
             Iterator<Class<?>> superClasses = ClassClimbing.superClasses(param, Throwable.class);
+            boolean found = false;
             while (superClasses.hasNext()) {
                 Class<?> exc = superClasses.next();
                 if (exceptions.contains(exc)) {
                     parameterIndexes.put(exc, p);
+                    found = true;
+                    break;
                 }
             }
-            throw new IllegalArgumentException(String.format("Invalid parameter %s, must be Request or one of the exceptions.",
-                    param.getName()));
+            checkArgument(found, "Invalid parameter %s, must be Request or one of the exceptions (%s).",
+                    param.getName(), exceptions);
         }
 
         // all parameters validated, pass on!
         MethodHandle base = safeUnreflect(method);
+        base = SRMethodHandles.fillThisParam(base, container);
         // inject a Request in the first param if needed
         base = SRMethodHandles.injectRequestParameter(base);
         for (Class<?> exc : exceptions) {
@@ -218,16 +235,15 @@ public class SimpleRouter<IB, OB> implements Router<IB, OB> {
         Object call() throws Throwable;
     }
 
-    @SuppressWarnings("unchecked")
     private static <V> V invokeHandleUnsafe(MHCall call) {
-        V result;
         try {
-            result = (V) call.call();
+            @SuppressWarnings("unchecked")
+            V result = (V) call.call();
+            return result;
         } catch (Throwable e) {
             Throwables.throwIfUnchecked(e);
             throw new RuntimeException(e);
         }
-        return result;
     }
 
 }

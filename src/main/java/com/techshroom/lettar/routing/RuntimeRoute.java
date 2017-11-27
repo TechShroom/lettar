@@ -1,6 +1,7 @@
 package com.techshroom.lettar.routing;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 import com.google.auto.value.AutoValue;
@@ -27,7 +28,7 @@ public abstract class RuntimeRoute<V> {
                 paramPredicate, headerPredicate, target);
     }
 
-    private static final Splitter SLASH = Splitter.on('/');
+    private static final Splitter SLASH = Splitter.on('/').omitEmptyStrings();
 
     RuntimeRoute() {
     }
@@ -52,12 +53,15 @@ public abstract class RuntimeRoute<V> {
         if (!headerPredicate().matches(request.getHeaders())) {
             return Optional.empty();
         }
+        if (!pathPredicates().isEmpty()) {
+        List<String> splitPath = SLASH.splitToList(request.getPath());
         for (PathRoutePredicate pathPredicate : pathPredicates()) {
-            MatchResult pathResult = pathPredicate.matches(SLASH.splitToList(request.getPath()));
+            MatchResult pathResult = pathPredicate.matches(splitPath);
             if (!pathResult.isSuccessfulMatch()) {
                 continue;
             }
             return Optional.of(RouteResult.of(target(), pathResult.getParts()));
+        }
         }
         return Optional.empty();
     }

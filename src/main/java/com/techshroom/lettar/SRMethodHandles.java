@@ -25,7 +25,7 @@ class SRMethodHandles {
 
         checkArgument(base.type().parameterCount() == 1,
                 "Only a Request is allowed as a parameter (method %s%s)",
-                originalType, name);
+                name, originalType);
 
         verifyResponseReturn(base.type(), name);
         return base;
@@ -51,6 +51,9 @@ class SRMethodHandles {
         Class<?>[] injection = new Class<?>[needed];
         Arrays.fill(injection, String.class);
         base = MethodHandles.dropArguments(base, base.type().parameterCount(), injection);
+        
+        // mix into Object[]
+        base = base.asSpreader(Object[].class, numCaps);
 
         verifyResponseReturn(base.type(), name);
         return base;
@@ -79,6 +82,13 @@ class SRMethodHandles {
 
         verifyResponseReturn(base.type(), name);
         return base;
+    }
+
+    public static MethodHandle fillThisParam(MethodHandle base, Object $this) {
+        if ($this == null) {
+            return base;
+        }
+        return MethodHandles.insertArguments(base, 0, $this);
     }
 
     public static MethodHandle injectRequestParameter(MethodHandle base) {

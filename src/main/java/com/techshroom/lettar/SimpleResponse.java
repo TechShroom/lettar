@@ -10,6 +10,10 @@ import com.google.common.collect.ImmutableMap;
 @AutoValue
 public abstract class SimpleResponse<B> implements Response<B> {
 
+    public static <B> SimpleResponse<B> of(int code, @Nullable B body) {
+        return SimpleResponse.<B> builder().body(body).statusCode(code).build();
+    }
+
     public static <B> Builder<B> builder() {
         return new AutoValue_SimpleResponse.Builder<B>()
                 .headers(ImmutableMap.of());
