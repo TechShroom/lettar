@@ -8,6 +8,7 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -18,12 +19,17 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.techshroom.lettar.annotation.AnnotationUtil;
 import com.techshroom.lettar.annotation.NotFoundHandler;
+import com.techshroom.lettar.annotation.Produces;
 import com.techshroom.lettar.annotation.Route;
 import com.techshroom.lettar.annotation.ServerErrorHandler;
+import com.techshroom.lettar.mime.MimeType;
 import com.techshroom.lettar.reflect.ClassClimbing;
 import com.techshroom.lettar.reflect.StringConversionException;
+import com.techshroom.lettar.routing.AcceptPredicate;
 import com.techshroom.lettar.routing.HttpMethodPredicate;
 import com.techshroom.lettar.routing.KeyValuePredicate;
 import com.techshroom.lettar.routing.PathRoutePredicate;
@@ -87,7 +93,11 @@ public class SimpleRouter<IB, OB> implements Router<IB, OB> {
             }
             Route route = method.getAnnotation(Route.class);
             if (route != null) {
-                addRoute(route, method, routeContainer);
+                Produces producesAnnot = method.getAnnotation(Produces.class);
+                String[] produces = producesAnnot == null
+                        ? new String[] { Produces.DEFAULT }
+                        : producesAnnot.value();
+                addRoute(route, produces, method, routeContainer);
                 continue;
             }
 
@@ -105,13 +115,14 @@ public class SimpleRouter<IB, OB> implements Router<IB, OB> {
         }
     }
 
-    private void addRoute(Route route, Method method, Object container) {
+    private void addRoute(Route route, String[] produces, Method method, Object container) {
         HttpMethodPredicate methodPredicate = HttpMethodPredicate.of(route.method());
         ImmutableSet<PathRoutePredicate> pathPredicate = Stream.of(route.path())
                 .map(PathRoutePredicate::parse)
                 .collect(toImmutableSet());
-        KeyValuePredicate params = KeyValuePredicate.of(route.params());
-        KeyValuePredicate headers = KeyValuePredicate.of(route.headers());
+        KeyValuePredicate params = KeyValuePredicate.of(AnnotationUtil.parseMap(route.params()));
+        KeyValuePredicate headers = KeyValuePredicate.of(AnnotationUtil.parseMap(route.headers()));
+        AcceptPredicate acceptPredicate = AcceptPredicate.of(parseMime(produces));
 
         // validate that all paths use the same number of captures
         int numCaps = -1;
@@ -129,7 +140,11 @@ public class SimpleRouter<IB, OB> implements Router<IB, OB> {
         base = SRMethodHandles.fillThisParam(base, container);
         base = SRMethodHandles.routeTransform(base, numCaps, method.getName());
 
-        routes.addRuntimeRoute(RuntimeRoute.of(methodPredicate, pathPredicate, params, headers, base));
+        routes.addRuntimeRoute(RuntimeRoute.of(methodPredicate, pathPredicate, params, headers, acceptPredicate, base));
+    }
+
+    private Collection<MimeType> parseMime(String[] value) {
+        return Stream.of(value).map(MimeType::parse).collect(toImmutableSet());
     }
 
     private static MethodHandle makeNotFoundHandler(Method method, Object container) {
@@ -173,7 +188,7 @@ public class SimpleRouter<IB, OB> implements Router<IB, OB> {
         MethodHandle base = safeUnreflect(method);
         base = SRMethodHandles.fillThisParam(base, container);
         // inject a Request in the first param if needed
-        base = SRMethodHandles.injectRequestParameter(base);
+        base = SRMethodHandles.injectParameter(base, 0, Request.class);
         for (Class<?> exc : exceptions) {
             MethodHandle result = SRMethodHandles.errorHandlerTransform(base, parameterIndexes, exc, method.getName());
             exceptionHandlers.put(exc, result);
@@ -183,7 +198,15 @@ public class SimpleRouter<IB, OB> implements Router<IB, OB> {
     @Override
     public Response<OB> route(Request<IB> request) {
         Optional<Response<OB>> res = routes.route(request, route -> {
-            return Optional.ofNullable(callRoute(request, route));
+            Optional<Response<OB>> responseOpt = Optional.ofNullable(callRoute(request, route));
+            // mix in content-type
+            responseOpt = responseOpt.map(r -> {
+                if (!r.getHeaders().containsKey("content-type")) {
+                    return r.addHeaders(ImmutableMap.of("content-type", route.getContentType().toString()));
+                }
+                return r;
+            });
+            return responseOpt;
         });
         return res.orElseGet(() -> invokeHandleUnsafe(() -> {
             try {
@@ -200,7 +223,7 @@ public class SimpleRouter<IB, OB> implements Router<IB, OB> {
             Object[] array = route.getPathVariables().toArray();
             // catch errors and return a 500 response
             try {
-                return route.getRouteTarget().invoke(request, array);
+                return route.getRouteTarget().invoke(request, route.getContentType(), array);
             } catch (StringConversionException badStringConversion) {
                 // this becomes a 404
                 return null;
@@ -211,23 +234,22 @@ public class SimpleRouter<IB, OB> implements Router<IB, OB> {
     }
 
     private Response<OB> maybeHandleError(Request<IB> request, Throwable t) throws Throwable {
-        try {
-            Iterator<Class<?>> classes = ClassClimbing.superClasses(t.getClass(), Throwable.class);
-            while (classes.hasNext()) {
-                MethodHandle serverErrorHandler = exceptionHandlers.get(classes.next());
-                if (serverErrorHandler != null) {
+        Iterator<Class<?>> classes = ClassClimbing.superClasses(t.getClass(), Throwable.class);
+        while (classes.hasNext()) {
+            Class<?> cls = classes.next();
+            MethodHandle serverErrorHandler = exceptionHandlers.get(cls);
+            if (serverErrorHandler != null) {
+                try {
                     return invokeHandleUnsafe(() -> serverErrorHandler.invoke(request, t));
+                } catch (Throwable bad) {
+                    LOGGER.error("500 handler for " + cls + " threw an exception", bad);
+                    return SimpleResponse.<OB> builder().statusCode(500).build();
                 }
             }
-            // re-throw, it'll be handled outside
-            throw t;
-        } catch (Throwable unhandledOrBad) {
-            // 500 handler messed up!
-            // just log it...
-            LOGGER.error("Unhandled 500 exception, please add a more general handler or ensure existing ones do not throw exceptions!", t);
-            // return a response with a null body, the best we can do
-            return SimpleResponse.<OB> builder().statusCode(500).build();
         }
+        LOGGER.error("Unhandled 500 exception, please add a more general handler!", t);
+        // return a response with a null body, the best we can do
+        return SimpleResponse.<OB> builder().statusCode(500).build();
     }
 
     private interface MHCall {

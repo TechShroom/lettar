@@ -135,6 +135,7 @@ public class PathRoutePredicate {
                     checkState(!hasEndChomp, "only one '**' allowed per route");
                     hasEndChomp = true;
                 }
+                numParts++;
                 p.add(partObj);
             }
             return new PathRoutePredicate(p.build(), capturing);

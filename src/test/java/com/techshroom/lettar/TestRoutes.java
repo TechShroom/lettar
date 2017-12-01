@@ -27,6 +27,16 @@ public class TestRoutes {
         return SimpleResponse.of(200, "[a,b,c," + resourceType + "]");
     }
 
+    @Route(path = "/ec/{**}")
+    public Response<String> endChomp(String chomped) {
+        return SimpleResponse.of(200, "CHOMP! " + chomped);
+    }
+
+    @Route(path = "/re/{re:\\d+}")
+    public Response<String> endChomp(int number) {
+        return SimpleResponse.of(200, "RE: " + number);
+    }
+
     @Route(path = "/error")
     public Response<String> getError() {
         throw new AssertionError("Error Here");

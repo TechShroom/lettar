@@ -8,6 +8,7 @@ import java.lang.invoke.MethodType;
 import java.util.Arrays;
 import java.util.Map;
 
+import com.techshroom.lettar.mime.MimeType;
 import com.techshroom.lettar.reflect.StringConverters;
 
 class SRMethodHandles {
@@ -21,7 +22,7 @@ class SRMethodHandles {
         // need (LRequest;)LResponse;
         MethodType originalType = base.type();
 
-        base = injectRequestParameter(base);
+        base = injectParameter(base, 0, Request.class);
 
         checkArgument(base.type().parameterCount() == 1,
                 "Only a Request is allowed as a parameter (method %s%s)",
@@ -32,26 +33,27 @@ class SRMethodHandles {
     }
 
     public static MethodHandle routeTransform(MethodHandle base, int numCaps, String name) {
-        // need (LRequest;[LObject;)LResponse;
+        // need (LRequest;LMimeType;[LObject;)LResponse;
 
-        base = injectRequestParameter(base);
+        base = injectParameter(base, 0, Request.class);
+        base = injectParameter(base, 1, MimeType.class);
 
         MethodType type = base.type();
 
         // transform parameters as needed -- we want all inputs to be String
         MethodHandle[] filters = new MethodHandle[type.parameterCount()];
-        for (int i = 1; i < type.parameterCount(); i++) {
+        for (int i = 2; i < type.parameterCount(); i++) {
             Class<?> parameter = type.parameterType(i);
             filters[i] = StringConverters.getHandleForArgType(parameter);
         }
         base = MethodHandles.filterArguments(base, 0, filters);
 
         // append parameters as needed
-        int needed = numCaps - (base.type().parameterCount() - 1);
+        int needed = numCaps - (base.type().parameterCount() - 2);
         Class<?>[] injection = new Class<?>[needed];
         Arrays.fill(injection, String.class);
         base = MethodHandles.dropArguments(base, base.type().parameterCount(), injection);
-        
+
         // mix into Object[]
         base = base.asSpreader(Object[].class, numCaps);
 
@@ -91,23 +93,26 @@ class SRMethodHandles {
         return MethodHandles.insertArguments(base, 0, $this);
     }
 
-    public static MethodHandle injectRequestParameter(MethodHandle base) {
+    public static MethodHandle injectParameter(MethodHandle base, int index, Class<?> paramType) {
         MethodType type = base.type();
 
-        // first, check first parameter, inject Request if needed
-        int params = type.parameterCount();
+        // first, check $index parameter, inject type if needed
+        int params = Math.max(type.parameterCount() - index + 1, 0);
         switch (params) {
             case 0:
-                // no parameter - inject Request as a fake parameter
-                base = MethodHandles.dropArguments(base, 0, Request.class);
+                // invalid state - we should already have params up to index
+                throw new IllegalStateException("Missing " + index + " parameter(s).");
+            case 1:
+                // no parameter - inject as a fake parameter
+                base = MethodHandles.dropArguments(base, index, paramType);
                 break;
             default:
                 // perhaps inject
-                if (Request.class.isAssignableFrom(type.parameterType(0))) {
+                if (type.parameterType(index).isAssignableFrom(paramType)) {
                     // all good
                     break;
                 }
-                base = MethodHandles.dropArguments(base, 0, Request.class);
+                base = MethodHandles.dropArguments(base, index, paramType);
         }
         return base;
     }

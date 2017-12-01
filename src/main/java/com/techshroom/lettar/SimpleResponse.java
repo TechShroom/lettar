@@ -6,6 +6,7 @@ import javax.annotation.Nullable;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 
 @AutoValue
 public abstract class SimpleResponse<B> implements Response<B> {
@@ -45,6 +46,16 @@ public abstract class SimpleResponse<B> implements Response<B> {
     }
 
     SimpleResponse() {
+    }
+
+    public abstract Builder<B> toBuilder();
+
+    @Override
+    public SimpleResponse<B> addHeaders(Map<String, String> headers) {
+        return toBuilder().headers(HttpUtil.headerMapBuilder()
+                .putAll(getHeaders())
+                .putAll(Maps.filterKeys(headers, k -> !getHeaders().containsKey(k)))
+                .build()).build();
     }
 
 }

@@ -19,7 +19,6 @@ buildscript {
     }
 }
 plugins {
-    id "com.google.protobuf" version "0.8.3"
     id "com.github.hierynomus.license" version "0.14.0"
 }
 
@@ -95,6 +94,9 @@ dependencies {
     addAPTReq name: 'velocity'
 
     testCompile group: 'junit', name: 'junit', version: '4.12'
+    testCompile group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3'
+    testCompile group: 'ch.qos.logback', name: 'logback-core', version: '1.2.3'
+
 }
 
 javadoc {

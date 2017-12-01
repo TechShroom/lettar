@@ -8,6 +8,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableSet;
 import com.techshroom.lettar.annotation.Route;
+import com.techshroom.lettar.mime.MimeType;
 import com.techshroom.lettar.routing.PathRoutePredicate.MatchResult;
 
 /**
@@ -23,9 +24,10 @@ public abstract class RuntimeRoute<V> {
             Collection<PathRoutePredicate> pathPredicates,
             KeyValuePredicate paramPredicate,
             KeyValuePredicate headerPredicate,
+            AcceptPredicate acceptPredicate,
             V target) {
         return new AutoValue_RuntimeRoute<>(methodPredicate, ImmutableSet.copyOf(pathPredicates),
-                paramPredicate, headerPredicate, target);
+                paramPredicate, headerPredicate, acceptPredicate, target);
     }
 
     private static final Splitter SLASH = Splitter.on('/').omitEmptyStrings();
@@ -41,6 +43,8 @@ public abstract class RuntimeRoute<V> {
 
     abstract KeyValuePredicate headerPredicate();
 
+    abstract AcceptPredicate acceptPredicate();
+
     abstract V target();
 
     public final Optional<RouteResult<V>> matches(Request request) {
@@ -53,15 +57,19 @@ public abstract class RuntimeRoute<V> {
         if (!headerPredicate().matches(request.getHeaders())) {
             return Optional.empty();
         }
-        if (!pathPredicates().isEmpty()) {
-        List<String> splitPath = SLASH.splitToList(request.getPath());
-        for (PathRoutePredicate pathPredicate : pathPredicates()) {
-            MatchResult pathResult = pathPredicate.matches(splitPath);
-            if (!pathResult.isSuccessfulMatch()) {
-                continue;
-            }
-            return Optional.of(RouteResult.of(target(), pathResult.getParts()));
+        Optional<MimeType> contentType = acceptPredicate().matches(request.getHeaders().getOrDefault("Accept", "*/*"));
+        if (!contentType.isPresent()) {
+            return Optional.empty();
         }
+        if (!pathPredicates().isEmpty()) {
+            List<String> splitPath = SLASH.splitToList(request.getPath());
+            for (PathRoutePredicate pathPredicate : pathPredicates()) {
+                MatchResult pathResult = pathPredicate.matches(splitPath);
+                if (!pathResult.isSuccessfulMatch()) {
+                    continue;
+                }
+                return Optional.of(RouteResult.of(target(), pathResult.getParts(), contentType.get()));
+            }
         }
         return Optional.empty();
     }

@@ -1,5 +1,7 @@
 package com.techshroom.lettar;
 
+import java.util.Map;
+
 import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableMap;
@@ -16,5 +18,7 @@ public interface Response<B> {
     B getBody();
 
     ImmutableMap<String, String> getHeaders();
+    
+    Response<B> addHeaders(Map<String, String> headers);
 
 }
