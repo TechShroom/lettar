@@ -1,5 +1,5 @@
 /*
- * This file is part of Lettar, licensed under the MIT License (MIT).
+ * This file is part of lettar, licensed under the MIT License (MIT).
  *
  * Copyright (c) TechShroom Studios <https://techshroom.com>
  * Copyright (c) contributors
