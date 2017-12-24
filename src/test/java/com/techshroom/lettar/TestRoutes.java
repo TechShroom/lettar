@@ -25,6 +25,7 @@
 package com.techshroom.lettar;
 
 import com.google.common.base.Throwables;
+import com.techshroom.lettar.annotation.BodyCodec;
 import com.techshroom.lettar.annotation.NotFoundHandler;
 import com.techshroom.lettar.annotation.Route;
 import com.techshroom.lettar.annotation.ServerErrorHandler;
@@ -64,6 +65,12 @@ public class TestRoutes {
     @Route(path = "/error")
     public Response<String> getError() {
         throw new AssertionError("Error Here");
+    }
+
+    @Route(path = "/json")
+    @BodyCodec.Marker(TestCodec.class)
+    public Response<String> json() {
+        return SimpleResponse.of(200, "This Content Doesn't Matter!");
     }
 
     @ServerErrorHandler

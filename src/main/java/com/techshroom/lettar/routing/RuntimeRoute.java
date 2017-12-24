@@ -30,6 +30,7 @@ import java.util.Optional;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.techshroom.lettar.annotation.Route;
 import com.techshroom.lettar.mime.MimeType;
@@ -78,7 +79,7 @@ public abstract class RuntimeRoute<V> {
         if (!paramPredicate().matches(request.getQueryParts())) {
             return Optional.empty();
         }
-        if (!headerPredicate().matches(request.getHeaders())) {
+        if (!headerPredicate().matches(ImmutableListMultimap.copyOf(request.getHeaders().asMultimap()))) {
             return Optional.empty();
         }
         Optional<MimeType> contentType = acceptPredicate().matches(request.getHeaders().getOrDefault("Accept", "*/*"));

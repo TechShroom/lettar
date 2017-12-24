@@ -25,17 +25,29 @@
 package com.techshroom.lettar;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static java.lang.invoke.MethodHandles.collectArguments;
+import static java.lang.invoke.MethodHandles.dropArguments;
+import static java.lang.invoke.MethodHandles.filterArguments;
+import static java.lang.invoke.MethodHandles.insertArguments;
+import static java.lang.invoke.MethodHandles.lookup;
+import static java.lang.invoke.MethodType.methodType;
 
 import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.util.Arrays;
 import java.util.Map;
 
 import com.techshroom.lettar.mime.MimeType;
+import com.techshroom.lettar.reflect.MethodHandles2;
 import com.techshroom.lettar.reflect.StringConverters;
 
 class SRMethodHandles {
+
+    private static final MethodHandle ThreadLocal_get = MethodHandles2.safeFindVirtual(lookup(), ThreadLocal.class, "get", methodType(Object.class));
+
+    private static MethodHandle threadLocalGet(ThreadLocal<?> threadLocal) {
+        return ThreadLocal_get.bindTo(threadLocal);
+    }
 
     private static void verifyResponseReturn(MethodType type, String name) {
         checkArgument(Response.class.isAssignableFrom(type.returnType()),
@@ -56,8 +68,9 @@ class SRMethodHandles {
         return base;
     }
 
-    public static MethodHandle routeTransform(MethodHandle base, int numCaps, String name) {
-        // need (LRequest;LMimeType;[LObject;)LResponse;
+    public static MethodHandle routeTransform(MethodHandle base, int numCaps, RouteEnhancements enhancements,
+            ThreadLocal<MimeType> contentType, ThreadLocal<Object[]> parameters, String name) {
+        // need (LRequest;)LResponse;
 
         base = injectParameter(base, 0, Request.class);
         base = injectParameter(base, 1, MimeType.class);
@@ -70,16 +83,20 @@ class SRMethodHandles {
             Class<?> parameter = type.parameterType(i);
             filters[i] = StringConverters.getHandleForArgType(parameter);
         }
-        base = MethodHandles.filterArguments(base, 0, filters);
+        base = filterArguments(base, 0, filters);
 
         // append parameters as needed
         int needed = numCaps - (base.type().parameterCount() - 2);
         Class<?>[] injection = new Class<?>[needed];
         Arrays.fill(injection, String.class);
-        base = MethodHandles.dropArguments(base, base.type().parameterCount(), injection);
+        base = dropArguments(base, base.type().parameterCount(), injection);
 
         // mix into Object[]
         base = base.asSpreader(Object[].class, numCaps);
+
+        // replace content and params with TL calls
+        base = collectArguments(base, 1, threadLocalGet(contentType).asType(methodType(MimeType.class)));
+        base = collectArguments(base, 1, threadLocalGet(parameters).asType(methodType(Object[].class)));
 
         verifyResponseReturn(base.type(), name);
         return base;
@@ -96,14 +113,14 @@ class SRMethodHandles {
             // drop parameters that aren't the parameter (except req)
             // this is the length of range [1, index)
             int numBefore = index - 1;
-            base = MethodHandles.insertArguments(base, 1, new Object[numBefore]);
+            base = insertArguments(base, 1, new Object[numBefore]);
             // this is the length of range (index, count - 1]
             int numAfter = base.type().parameterCount() - 1 - index;
-            base = MethodHandles.insertArguments(base, index + 1, new Object[numAfter]);
+            base = insertArguments(base, index + 1, new Object[numAfter]);
         } else {
             // drop all parameters after the request, insert fake parameter
-            base = MethodHandles.insertArguments(base, 1, new Object[originalType.parameterCount() - 1]);
-            base = MethodHandles.dropArguments(base, 1, exception);
+            base = insertArguments(base, 1, new Object[originalType.parameterCount() - 1]);
+            base = dropArguments(base, 1, exception);
         }
 
         verifyResponseReturn(base.type(), name);
@@ -114,7 +131,7 @@ class SRMethodHandles {
         if ($this == null) {
             return base;
         }
-        return MethodHandles.insertArguments(base, 0, $this);
+        return insertArguments(base, 0, $this);
     }
 
     public static MethodHandle injectParameter(MethodHandle base, int index, Class<?> paramType) {
@@ -128,7 +145,7 @@ class SRMethodHandles {
                 throw new IllegalStateException("Missing " + index + " parameter(s).");
             case 1:
                 // no parameter - inject as a fake parameter
-                base = MethodHandles.dropArguments(base, index, paramType);
+                base = dropArguments(base, index, paramType);
                 break;
             default:
                 // perhaps inject
@@ -136,7 +153,7 @@ class SRMethodHandles {
                     // all good
                     break;
                 }
-                base = MethodHandles.dropArguments(base, index, paramType);
+                base = dropArguments(base, index, paramType);
         }
         return base;
     }

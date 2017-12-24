@@ -22,24 +22,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.techshroom.lettar.routing;
+package com.techshroom.lettar;
 
-import com.google.common.collect.ImmutableListMultimap;
-import com.google.common.collect.ImmutableMap;
+import com.techshroom.lettar.body.SimpleCodec;
 
-/**
- * A request is something that needs routing. It is made up of a path, query
- * parts, a method and headers. For HTTP handling, there's another interface
- * with the body as well.
- */
-public interface Request {
+public class TestCodec implements SimpleCodec<String, String> {
 
-    String getPath();
+    @Override
+    public String encode(String input) {
+        return "Encoded: " + input;
+    }
 
-    ImmutableListMultimap<String, String> getQueryParts();
-
-    ImmutableMap<String, String> getHeaders();
-
-    HttpMethod getMethod();
+    @Override
+    public String decode(String input) {
+        // "parse" json!
+        return input.replace("Encoded: ", "");
+    }
 
 }

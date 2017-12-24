@@ -22,24 +22,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.techshroom.lettar.routing;
-
-import com.google.common.collect.ImmutableListMultimap;
-import com.google.common.collect.ImmutableMap;
+package com.techshroom.lettar.body;
 
 /**
- * A request is something that needs routing. It is made up of a path, query
- * parts, a method and headers. For HTTP handling, there's another interface
- * with the body as well.
+ * Codec for when the external and internal types for a codec are matched.
+ * 
+ * @param <EXT>
+ *            - the external type
+ * @param <INT>
+ *            - the internal type
  */
-public interface Request {
-
-    String getPath();
-
-    ImmutableListMultimap<String, String> getQueryParts();
-
-    ImmutableMap<String, String> getHeaders();
-
-    HttpMethod getMethod();
+public interface SimpleCodec<EXT, INT> extends Codec<EXT, INT, INT, EXT> {
 
 }

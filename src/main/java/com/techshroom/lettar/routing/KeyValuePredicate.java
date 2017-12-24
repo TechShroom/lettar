@@ -24,31 +24,34 @@
  */
 package com.techshroom.lettar.routing;
 
-import java.util.Map;
+import java.util.List;
 import java.util.Map.Entry;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableListMultimap;
+import com.google.common.collect.ListMultimap;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Multimaps;
 
 @AutoValue
 public abstract class KeyValuePredicate {
 
-    public static KeyValuePredicate of(Map<String, String> values) {
-        return new AutoValue_KeyValuePredicate(ImmutableMap.copyOf(values));
+    public static KeyValuePredicate of(Multimap<String, String> values) {
+        return new AutoValue_KeyValuePredicate(ImmutableListMultimap.copyOf(values));
     }
 
     KeyValuePredicate() {
     }
 
-    abstract ImmutableMap<String, String> getMap();
+    abstract ListMultimap<String, String> getMap();
 
-    public final boolean matches(Map<String, String> values) {
+    public final boolean matches(ListMultimap<String, String> values) {
         // fast-check keyset before iterating
         if (!values.keySet().containsAll(getMap().keySet())) {
             return false;
         }
-        for (Entry<String, String> e : getMap().entrySet()) {
-            String valuesValue = values.get(e.getKey());
+        for (Entry<String, List<String>> e : Multimaps.asMap(getMap()).entrySet()) {
+            List<String> valuesValue = values.get(e.getKey());
             if (!e.getValue().equals(valuesValue)) {
                 return false;
             }

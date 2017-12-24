@@ -22,24 +22,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.techshroom.lettar.routing;
+package com.techshroom.lettar.reflect;
 
-import com.google.common.collect.ImmutableListMultimap;
-import com.google.common.collect.ImmutableMap;
+import com.google.common.base.Throwables;
 
-/**
- * A request is something that needs routing. It is made up of a path, query
- * parts, a method and headers. For HTTP handling, there's another interface
- * with the body as well.
- */
-public interface Request {
+public class Constructors {
 
-    String getPath();
-
-    ImmutableListMultimap<String, String> getQueryParts();
-
-    ImmutableMap<String, String> getHeaders();
-
-    HttpMethod getMethod();
+    public static <T> T instatiate(Class<T> clazz) {
+        try {
+            return clazz.newInstance();
+        } catch (InstantiationException e) {
+            Throwable cause = e.getCause();
+            Throwables.throwIfUnchecked(cause);
+            throw new RuntimeException(cause);
+        } catch (IllegalAccessException e) {
+            throw new IllegalArgumentException("Only public constructors allowed", e);
+        }
+    }
 
 }

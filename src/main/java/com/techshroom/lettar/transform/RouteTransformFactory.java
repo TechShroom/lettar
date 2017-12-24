@@ -22,24 +22,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.techshroom.lettar.routing;
+package com.techshroom.lettar.transform;
 
-import com.google.common.collect.ImmutableListMultimap;
-import com.google.common.collect.ImmutableMap;
+import java.lang.annotation.Annotation;
+
+import com.google.common.collect.ImmutableList;
 
 /**
- * A request is something that needs routing. It is made up of a path, query
- * parts, a method and headers. For HTTP handling, there's another interface
- * with the body as well.
+ * RTF must have an inner class named "Marker", the Marker must be type used in
+ * M. Failure to follow this rule will result in runtime exceptions.
+ * 
+ * @param <M>
+ *            - the inner marker type
  */
-public interface Request {
+public interface RouteTransformFactory<M extends Annotation> {
 
-    String getPath();
-
-    ImmutableListMultimap<String, String> getQueryParts();
-
-    ImmutableMap<String, String> getHeaders();
-
-    HttpMethod getMethod();
+    ImmutableList<RouteTransform<?, ?>> fromMarker(M marker);
 
 }

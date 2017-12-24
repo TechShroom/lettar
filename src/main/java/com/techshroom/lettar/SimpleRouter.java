@@ -27,9 +27,9 @@ package com.techshroom.lettar;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
+import static com.techshroom.lettar.reflect.MethodHandles2.invokeHandleUnchecked;
 
 import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Collection;
@@ -42,16 +42,15 @@ import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.techshroom.lettar.annotation.AnnotationUtil;
 import com.techshroom.lettar.annotation.NotFoundHandler;
-import com.techshroom.lettar.annotation.Produces;
 import com.techshroom.lettar.annotation.Route;
 import com.techshroom.lettar.annotation.ServerErrorHandler;
 import com.techshroom.lettar.mime.MimeType;
 import com.techshroom.lettar.reflect.ClassClimbing;
+import com.techshroom.lettar.reflect.MethodHandles2;
 import com.techshroom.lettar.reflect.StringConversionException;
 import com.techshroom.lettar.routing.AcceptPredicate;
 import com.techshroom.lettar.routing.HttpMethodPredicate;
@@ -60,21 +59,11 @@ import com.techshroom.lettar.routing.PathRoutePredicate;
 import com.techshroom.lettar.routing.RouteMap;
 import com.techshroom.lettar.routing.RouteResult;
 import com.techshroom.lettar.routing.RuntimeRoute;
+import com.techshroom.lettar.transform.TransformChain;
 
 public class SimpleRouter<IB, OB> implements Router<IB, OB> {
 
     private static final Logger LOGGER = Logging.getLogger();
-
-    private static final MethodHandles.Lookup LOOKUP = MethodHandles.publicLookup();
-
-    private static MethodHandle safeUnreflect(Method method) {
-        try {
-            return LOOKUP.unreflect(method);
-        } catch (IllegalAccessException e) {
-            // this method assumes method is public
-            throw new RuntimeException(e);
-        }
-    }
 
     private static final MethodHandle EMPTY_404_HANDLER;
     static {
@@ -99,7 +88,9 @@ public class SimpleRouter<IB, OB> implements Router<IB, OB> {
     private MethodHandle notFoundHandler = EMPTY_404_HANDLER;
     // method handles must be (LRequest;[LObject;)LResponse;
     // the array is the length of the parameters :D
-    private final RouteMap<MethodHandle> routes = new RouteMap<>();
+    private final RouteMap<TransformChain<IB, OB>> routes = new RouteMap<>();
+    private final ThreadLocal<MimeType> contentTypeThreadLocal = new ThreadLocal<>();
+    private final ThreadLocal<Object[]> parametersThreadLocal = new ThreadLocal<>();
 
     private SimpleRouter() {
     }
@@ -117,11 +108,8 @@ public class SimpleRouter<IB, OB> implements Router<IB, OB> {
             }
             Route route = method.getAnnotation(Route.class);
             if (route != null) {
-                Produces producesAnnot = method.getAnnotation(Produces.class);
-                String[] produces = producesAnnot == null
-                        ? new String[] { Produces.DEFAULT }
-                        : producesAnnot.value();
-                addRoute(route, produces, method, routeContainer);
+                RouteEnhancements enhancements = RouteEnhancements.load(method);
+                addRoute(route, enhancements, method, routeContainer);
                 continue;
             }
 
@@ -139,14 +127,14 @@ public class SimpleRouter<IB, OB> implements Router<IB, OB> {
         }
     }
 
-    private void addRoute(Route route, String[] produces, Method method, Object container) {
+    private void addRoute(Route route, RouteEnhancements enhancements, Method method, Object container) {
         HttpMethodPredicate methodPredicate = HttpMethodPredicate.of(route.method());
         ImmutableSet<PathRoutePredicate> pathPredicate = Stream.of(route.path())
                 .map(PathRoutePredicate::parse)
                 .collect(toImmutableSet());
-        KeyValuePredicate params = KeyValuePredicate.of(AnnotationUtil.parseMap(route.params()));
-        KeyValuePredicate headers = KeyValuePredicate.of(AnnotationUtil.parseMap(route.headers()));
-        AcceptPredicate acceptPredicate = AcceptPredicate.of(parseMime(produces));
+        KeyValuePredicate params = KeyValuePredicate.of(AnnotationUtil.parseMultimap(route.params()));
+        KeyValuePredicate headers = KeyValuePredicate.of(AnnotationUtil.parseMap(route.headers()).asMultimap());
+        AcceptPredicate acceptPredicate = AcceptPredicate.of(parseMime(enhancements.produces()));
 
         // validate that all paths use the same number of captures
         int numCaps = -1;
@@ -159,20 +147,22 @@ public class SimpleRouter<IB, OB> implements Router<IB, OB> {
                     numCaps, pred.getNumberOfCapturedParts());
         }
 
-        MethodHandle base = safeUnreflect(method);
+        MethodHandle base = MethodHandles2.safeUnreflect(method);
 
         base = SRMethodHandles.fillThisParam(base, container);
-        base = SRMethodHandles.routeTransform(base, numCaps, method.getName());
+        base = SRMethodHandles.routeTransform(base, numCaps, enhancements, contentTypeThreadLocal, parametersThreadLocal, method.getName());
 
-        routes.addRuntimeRoute(RuntimeRoute.of(methodPredicate, pathPredicate, params, headers, acceptPredicate, base));
+        TransformChain<IB, OB> chain = SRChains.newChain(enhancements, base);
+
+        routes.addRuntimeRoute(RuntimeRoute.of(methodPredicate, pathPredicate, params, headers, acceptPredicate, chain));
     }
 
-    private Collection<MimeType> parseMime(String[] value) {
-        return Stream.of(value).map(MimeType::parse).collect(toImmutableSet());
+    private Collection<MimeType> parseMime(Collection<String> value) {
+        return value.stream().map(MimeType::parse).collect(toImmutableSet());
     }
 
     private static MethodHandle makeNotFoundHandler(Method method, Object container) {
-        MethodHandle base = safeUnreflect(method);
+        MethodHandle base = MethodHandles2.safeUnreflect(method);
         base = SRMethodHandles.fillThisParam(base, container);
         return SRMethodHandles.notFoundHandlerTransform(base, method.getName());
     }
@@ -209,7 +199,7 @@ public class SimpleRouter<IB, OB> implements Router<IB, OB> {
         }
 
         // all parameters validated, pass on!
-        MethodHandle base = safeUnreflect(method);
+        MethodHandle base = MethodHandles2.safeUnreflect(method);
         base = SRMethodHandles.fillThisParam(base, container);
         // inject a Request in the first param if needed
         base = SRMethodHandles.injectParameter(base, 0, Request.class);
@@ -232,7 +222,7 @@ public class SimpleRouter<IB, OB> implements Router<IB, OB> {
             });
             return responseOpt;
         });
-        return res.orElseGet(() -> invokeHandleUnsafe(() -> {
+        return res.orElseGet(() -> invokeHandleUnchecked(() -> {
             try {
                 return notFoundHandler.invoke(request);
             } catch (Throwable t) {
@@ -241,55 +231,48 @@ public class SimpleRouter<IB, OB> implements Router<IB, OB> {
         }));
     }
 
-    private Response<OB> callRoute(Request<IB> request, RouteResult<MethodHandle> route) {
-        return invokeHandleUnsafe(() -> {
-            // we use Request + Object[] to pass arguments
-            Object[] array = route.getPathVariables().toArray();
-            // catch errors and return a 500 response
-            try {
-                return route.getRouteTarget().invoke(request, route.getContentType(), array);
-            } catch (StringConversionException badStringConversion) {
-                // this becomes a 404
-                return null;
-            } catch (Throwable t) {
-                return maybeHandleError(request, t);
-            }
-        });
+    private Response<OB> callRoute(Request<IB> request, RouteResult<TransformChain<IB, OB>> route) {
+        contentTypeThreadLocal.set(route.getContentType());
+        parametersThreadLocal.set(route.getPathVariables().toArray());
+        try {
+            return route.getRouteTarget().withRequest(request).next();
+        } catch (StringConversionException badStringConversion) {
+            // this becomes a 404
+            return null;
+        } catch (Throwable t) {
+            return maybeHandleError(request, t);
+        } finally {
+            contentTypeThreadLocal.set(null);
+            parametersThreadLocal.set(null);
+        }
     }
 
-    private Response<OB> maybeHandleError(Request<IB> request, Throwable t) throws Throwable {
+    private Response<OB> maybeHandleError(Request<IB> request, Throwable t) {
         Iterator<Class<?>> classes = ClassClimbing.superClasses(t.getClass(), Throwable.class);
         while (classes.hasNext()) {
             Class<?> cls = classes.next();
             MethodHandle serverErrorHandler = exceptionHandlers.get(cls);
             if (serverErrorHandler != null) {
                 try {
-                    return invokeHandleUnsafe(() -> serverErrorHandler.invoke(request, t));
+                    return invokeHandleUnchecked(() -> serverErrorHandler.invoke(request, t));
                 } catch (Throwable bad) {
+                    bad.addSuppressed(new RuntimeException("Original Exception in Cause", t));
+                    // if unhandled Error, re-throw, as it is likely fatal
+                    if (bad instanceof Error) {
+                        throw (Error) bad;
+                    }
                     LOGGER.error("500 handler for " + cls + " threw an exception", bad);
                     return SimpleResponse.<OB> builder().statusCode(500).build();
                 }
             }
         }
+        // if unhandled Error, re-throw, as it is likely fatal
+        if (t instanceof Error) {
+            throw (Error) t;
+        }
         LOGGER.error("Unhandled 500 exception, please add a more general handler!", t);
         // return a response with a null body, the best we can do
         return SimpleResponse.<OB> builder().statusCode(500).build();
-    }
-
-    private interface MHCall {
-
-        Object call() throws Throwable;
-    }
-
-    private static <V> V invokeHandleUnsafe(MHCall call) {
-        try {
-            @SuppressWarnings("unchecked")
-            V result = (V) call.call();
-            return result;
-        } catch (Throwable e) {
-            Throwables.throwIfUnchecked(e);
-            throw new RuntimeException(e);
-        }
     }
 
 }

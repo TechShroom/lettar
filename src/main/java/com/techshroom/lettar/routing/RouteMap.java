@@ -25,6 +25,7 @@
 package com.techshroom.lettar.routing;
 
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -41,6 +42,9 @@ public class RouteMap<V> {
     private boolean routeImmutable = false;
 
     public void addRuntimeRoute(RuntimeRoute<V> route) {
+        if (routeImmutable) {
+            throw new UnsupportedOperationException("Routes may not be added after routing.");
+        }
         routes.add(route);
     }
 
@@ -49,14 +53,21 @@ public class RouteMap<V> {
             routes = ImmutableSet.copyOf(routes);
             routeImmutable = true;
         }
-        return routes.stream()
+        Iterator<RouteResult<V>> map = routes.stream()
+                // filter by matches
                 .map(r -> r.matches(request))
+                // optional unpack
                 .filter(Optional::isPresent)
                 .map(Optional::get)
-                .map(handler)
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .findAny();
+                .iterator();
+        while (map.hasNext()) {
+            RouteResult<V> route = map.next();
+            Optional<O> result = handler.apply(route);
+            if (result.isPresent()) {
+                return result;
+            }
+        }
+        return Optional.empty();
     }
 
 }

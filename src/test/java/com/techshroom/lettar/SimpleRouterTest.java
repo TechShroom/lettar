@@ -33,7 +33,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.Multimap;
 import com.techshroom.lettar.routing.HttpMethod;
 
 public class SimpleRouterTest {
@@ -72,9 +73,9 @@ public class SimpleRouterTest {
         registerRoutes();
 
         assertEqualsIgnContentType(SimpleResponse.of(200, "Queried 'index' Page"), router.route(request("/query",
-                ImmutableMap.of("page", "index"))));
+                ImmutableMultimap.of("page", "index"))));
         assertEqualsIgnContentType(SimpleResponse.of(200, "Queried 'action' Page"), router.route(request("/query",
-                ImmutableMap.of("page", "action", "action", "foobar"))));
+                ImmutableMultimap.of("page", "action", "action", "foobar"))));
     }
 
     @Test
@@ -113,7 +114,7 @@ public class SimpleRouterTest {
                 .build();
     }
 
-    private static Request<String> request(String path, Map<String, String> query) {
+    private static Request<String> request(String path, Multimap<String, String> query) {
         return SimpleRequest.<String> builder()
                 .method(HttpMethod.GET)
                 .path(path)

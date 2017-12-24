@@ -30,6 +30,8 @@ import javax.annotation.Nullable;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.Multimap;
 import com.techshroom.lettar.routing.HttpMethod;
 
 @AutoValue
@@ -38,14 +40,14 @@ public abstract class SimpleRequest<B> implements Request<B> {
     public static <B> Builder<B> builder() {
         return new AutoValue_SimpleRequest.Builder<B>()
                 .headers(ImmutableMap.of())
-                .queryParts(ImmutableMap.of());
+                .queryParts(ImmutableMultimap.of());
     }
 
     @AutoValue.Builder
     public interface Builder<B> {
-        
+
         Builder<B> method(HttpMethod method);
-        
+
         Builder<B> path(String path);
 
         Builder<B> headers(ImmutableMap<String, String> headers);
@@ -54,7 +56,7 @@ public abstract class SimpleRequest<B> implements Request<B> {
             return headers(HttpUtil.headerMapBuilder().putAll(headers).build());
         }
 
-        Builder<B> queryParts(Map<String, String> headers);
+        Builder<B> queryParts(Multimap<String, String> headers);
 
         Builder<B> body(@Nullable B body);
 
@@ -64,5 +66,14 @@ public abstract class SimpleRequest<B> implements Request<B> {
 
     SimpleRequest() {
     }
+
+    @Override
+    public <U> Request<U> withBody(U body) {
+        @SuppressWarnings("unchecked")
+        Builder<U> builder = (Builder<U>) toBuilder();
+        return builder.body(body).build();
+    }
+
+    public abstract Builder<B> toBuilder();
 
 }

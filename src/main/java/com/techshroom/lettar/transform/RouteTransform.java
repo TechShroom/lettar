@@ -22,24 +22,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.techshroom.lettar.routing;
+package com.techshroom.lettar.transform;
 
-import com.google.common.collect.ImmutableListMultimap;
-import com.google.common.collect.ImmutableMap;
+import com.techshroom.lettar.Response;
 
-/**
- * A request is something that needs routing. It is made up of a path, query
- * parts, a method and headers. For HTTP handling, there's another interface
- * with the body as well.
- */
-public interface Request {
+public interface RouteTransform<I, O> {
 
-    String getPath();
-
-    ImmutableListMultimap<String, String> getQueryParts();
-
-    ImmutableMap<String, String> getHeaders();
-
-    HttpMethod getMethod();
+    Response<O> transform(TransformChain<I, O> chain);
 
 }

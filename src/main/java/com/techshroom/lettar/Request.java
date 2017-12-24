@@ -35,4 +35,6 @@ public interface Request<B> extends com.techshroom.lettar.routing.Request {
     @Nullable
     B getBody();
 
+    <U> Request<U> withBody(@Nullable U body);
+
 }

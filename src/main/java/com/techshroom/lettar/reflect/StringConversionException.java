@@ -28,6 +28,8 @@ package com.techshroom.lettar.reflect;
  * Thrown by {@link StringConverters}.
  */
 public class StringConversionException extends RuntimeException {
+    // performance could be improved by going the singleton no-stack route here
+    // but is it needed?
 
     private static final long serialVersionUID = 8237595480237534610L;
 

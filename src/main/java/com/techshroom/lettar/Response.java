@@ -41,8 +41,10 @@ public interface Response<B> {
     @Nullable
     B getBody();
 
+    <U> Response<U> withBody(@Nullable U body);
+
     ImmutableMap<String, String> getHeaders();
-    
+
     Response<B> addHeaders(Map<String, String> headers);
 
 }

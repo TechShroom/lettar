@@ -72,6 +72,13 @@ public abstract class SimpleResponse<B> implements Response<B> {
     SimpleResponse() {
     }
 
+    @Override
+    public <U> Response<U> withBody(U body) {
+        @SuppressWarnings("unchecked")
+        Builder<U> builder = (Builder<U>) toBuilder();
+        return builder.body(body).build();
+    }
+
     public abstract Builder<B> toBuilder();
 
     @Override

@@ -22,24 +22,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.techshroom.lettar.routing;
+package com.techshroom.lettar;
 
-import com.google.common.collect.ImmutableListMultimap;
-import com.google.common.collect.ImmutableMap;
+import static com.techshroom.lettar.reflect.MethodHandles2.invokeHandleUnchecked;
 
-/**
- * A request is something that needs routing. It is made up of a path, query
- * parts, a method and headers. For HTTP handling, there's another interface
- * with the body as well.
- */
-public interface Request {
+import java.lang.invoke.MethodHandle;
 
-    String getPath();
+import com.google.common.collect.ImmutableList;
+import com.techshroom.lettar.transform.RouteTransform;
+import com.techshroom.lettar.transform.TransformChain;
+import com.techshroom.lettar.transform.TransformChainImpl;
 
-    ImmutableListMultimap<String, String> getQueryParts();
+class SRChains {
 
-    ImmutableMap<String, String> getHeaders();
+    public static <IB, OB> TransformChain<IB, OB> newChain(RouteEnhancements enhancements, MethodHandle base) {
+        ImmutableList.Builder<RouteTransform<?, ?>> transforms = ImmutableList.builder();
+        transforms.addAll(enhancements.routeTransforms());
+        transforms.add(baseCallTransform(base));
+        return TransformChainImpl.create(transforms.build());
+    }
 
-    HttpMethod getMethod();
+    private static RouteTransform<?, ?> baseCallTransform(MethodHandle base) {
+        return chain -> invokeHandleUnchecked(() -> base.invoke(chain.request()));
+    }
 
 }
