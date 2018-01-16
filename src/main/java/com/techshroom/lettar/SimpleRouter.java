@@ -42,7 +42,6 @@ import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.techshroom.lettar.annotation.AnnotationUtil;
 import com.techshroom.lettar.annotation.NotFoundHandler;
@@ -215,8 +214,8 @@ public class SimpleRouter<IB, OB> implements Router<IB, OB> {
             Optional<Response<OB>> responseOpt = Optional.ofNullable(callRoute(request, route));
             // mix in content-type
             responseOpt = responseOpt.map(r -> {
-                if (!r.getHeaders().containsKey("content-type")) {
-                    return r.addHeaders(ImmutableMap.of("content-type", route.getContentType().toString()));
+                if (!r.getHeaders().getMultimap().containsKey("content-type")) {
+                    return r.addHeader("content-type", route.getContentType().toString());
                 }
                 return r;
             });

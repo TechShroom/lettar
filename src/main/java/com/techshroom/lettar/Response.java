@@ -24,11 +24,9 @@
  */
 package com.techshroom.lettar;
 
-import java.util.Map;
-
 import javax.annotation.Nullable;
 
-import com.google.common.collect.ImmutableMap;
+import com.techshroom.lettar.collections.HttpMultimap;
 
 /**
  * A response is a reply to a routed {@link Request}. It contains a status code,
@@ -43,8 +41,8 @@ public interface Response<B> {
 
     <U> Response<U> withBody(@Nullable U body);
 
-    ImmutableMap<String, String> getHeaders();
+    HttpMultimap getHeaders();
 
-    Response<B> addHeaders(Map<String, String> headers);
+    Response<B> addHeader(String key, String value);
 
 }

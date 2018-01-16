@@ -24,8 +24,8 @@
  */
 package com.techshroom.lettar;
 
+import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSortedMap;
 
 /**
  * Utilities for HTTP.
@@ -38,8 +38,9 @@ public class HttpUtil {
      * 
      * @return a header map builder
      */
-    public static ImmutableMap.Builder<String, String> headerMapBuilder() {
-        return ImmutableSortedMap.orderedBy(String.CASE_INSENSITIVE_ORDER);
+    public static ImmutableListMultimap.Builder<String, String> headerMapBuilder() {
+        return ImmutableListMultimap.<String, String> builder()
+                .orderKeysBy(String.CASE_INSENSITIVE_ORDER);
     }
 
 }

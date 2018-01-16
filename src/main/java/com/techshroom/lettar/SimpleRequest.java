@@ -24,23 +24,29 @@
  */
 package com.techshroom.lettar;
 
-import java.util.Map;
-
 import javax.annotation.Nullable;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.Multimap;
+import com.techshroom.lettar.collections.HttpMultimap;
 import com.techshroom.lettar.routing.HttpMethod;
 
 @AutoValue
 public abstract class SimpleRequest<B> implements Request<B> {
 
+    public static <B> SimpleRequest<B> copyOfWithBody(Request<?> request, B body) {
+        return SimpleRequest.<B> builder()
+                .method(request.getMethod())
+                .path(request.getPath())
+                .queryParts(request.getQueryParts())
+                .headers(request.getHeaders())
+                .body(body)
+                .build();
+    }
+
     public static <B> Builder<B> builder() {
         return new AutoValue_SimpleRequest.Builder<B>()
-                .headers(ImmutableMap.of())
-                .queryParts(ImmutableMultimap.of());
+                .headers(HttpMultimap.of())
+                .queryParts(HttpMultimap.of());
     }
 
     @AutoValue.Builder
@@ -50,13 +56,9 @@ public abstract class SimpleRequest<B> implements Request<B> {
 
         Builder<B> path(String path);
 
-        Builder<B> headers(ImmutableMap<String, String> headers);
+        Builder<B> headers(HttpMultimap headers);
 
-        default Builder<B> headers(Map<String, String> headers) {
-            return headers(HttpUtil.headerMapBuilder().putAll(headers).build());
-        }
-
-        Builder<B> queryParts(Multimap<String, String> headers);
+        Builder<B> queryParts(HttpMultimap headers);
 
         Builder<B> body(@Nullable B body);
 

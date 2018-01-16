@@ -27,14 +27,13 @@ package com.techshroom.lettar;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static org.junit.Assert.assertEquals;
 
-import java.util.Map;
-
 import org.junit.Before;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Multimap;
+import com.techshroom.lettar.collections.HttpMultimap;
 import com.techshroom.lettar.routing.HttpMethod;
 
 public class SimpleRouterTest {
@@ -73,9 +72,9 @@ public class SimpleRouterTest {
         registerRoutes();
 
         assertEqualsIgnContentType(SimpleResponse.of(200, "Queried 'index' Page"), router.route(request("/query",
-                ImmutableMultimap.of("page", "index"))));
+                HttpMultimap.copyOf(ImmutableMap.of("page", "index")))));
         assertEqualsIgnContentType(SimpleResponse.of(200, "Queried 'action' Page"), router.route(request("/query",
-                ImmutableMultimap.of("page", "action", "action", "foobar"))));
+                HttpMultimap.copyOf(ImmutableMap.of("page", "action", "action", "foobar")))));
     }
 
     @Test
@@ -99,12 +98,13 @@ public class SimpleRouterTest {
     private static void assertEqualsIgnContentType(SimpleResponse<String> expected, Response<String> actual) {
         assertEquals(expected.getBody(), actual.getBody());
         assertEquals(expected.getStatusCode(), actual.getStatusCode());
-        Map<String, String> headers = HttpUtil.headerMapBuilder().putAll(
-                actual.getHeaders().entrySet().stream()
+        // strip content type from headers
+        Multimap<String, String> headers = HttpUtil.headerMapBuilder().putAll(
+                actual.getHeaders().getMultimap().entries().stream()
                         .filter(e -> !"content-type".equalsIgnoreCase(e.getKey()))
                         .collect(toImmutableList()))
                 .build();
-        assertEquals(expected.getHeaders(), headers);
+        assertEquals(expected.getHeaders().getMultimap(), headers);
     }
 
     private static Request<String> request(String path) {
@@ -114,7 +114,7 @@ public class SimpleRouterTest {
                 .build();
     }
 
-    private static Request<String> request(String path, Multimap<String, String> query) {
+    private static Request<String> request(String path, HttpMultimap query) {
         return SimpleRequest.<String> builder()
                 .method(HttpMethod.GET)
                 .path(path)

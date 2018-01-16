@@ -24,8 +24,7 @@
  */
 package com.techshroom.lettar.routing;
 
-import com.google.common.collect.ImmutableListMultimap;
-import com.google.common.collect.ImmutableMap;
+import com.techshroom.lettar.collections.HttpMultimap;
 
 /**
  * A request is something that needs routing. It is made up of a path, query
@@ -36,9 +35,9 @@ public interface Request {
 
     String getPath();
 
-    ImmutableListMultimap<String, String> getQueryParts();
+    HttpMultimap getQueryParts();
 
-    ImmutableMap<String, String> getHeaders();
+    HttpMultimap getHeaders();
 
     HttpMethod getMethod();
 

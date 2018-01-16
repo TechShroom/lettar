@@ -30,7 +30,6 @@ import java.util.Optional;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Splitter;
-import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.techshroom.lettar.annotation.Route;
 import com.techshroom.lettar.mime.MimeType;
@@ -76,27 +75,26 @@ public abstract class RuntimeRoute<V> {
         if (!methodPredicate().matches(request.getMethod())) {
             return Optional.empty();
         }
-        if (!paramPredicate().matches(request.getQueryParts())) {
+        if (!paramPredicate().matches(request.getQueryParts().getMultimap())) {
             return Optional.empty();
         }
-        if (!headerPredicate().matches(ImmutableListMultimap.copyOf(request.getHeaders().asMultimap()))) {
+        if (!headerPredicate().matches(request.getHeaders().getMultimap())) {
             return Optional.empty();
         }
-        Optional<MimeType> contentType = acceptPredicate().matches(request.getHeaders().getOrDefault("Accept", "*/*"));
+        String acceptHeaderValue = request.getHeaders().getSingleValueOrDefault("Accept", "*/*");
+        Optional<MimeType> contentType = acceptPredicate().matches(acceptHeaderValue);
         if (!contentType.isPresent()) {
             return Optional.empty();
         }
-        if (!pathPredicates().isEmpty()) {
-            List<String> splitPath = SLASH.splitToList(request.getPath());
-            for (PathRoutePredicate pathPredicate : pathPredicates()) {
-                MatchResult pathResult = pathPredicate.matches(splitPath);
-                if (!pathResult.isSuccessfulMatch()) {
-                    continue;
-                }
-                return Optional.of(RouteResult.of(target(), pathResult.getParts(), contentType.get()));
-            }
+        List<String> splitPath = SLASH.splitToList(request.getPath());
+        Optional<MatchResult> result = pathPredicates().stream()
+                .map(p -> p.matches(splitPath))
+                .filter(MatchResult::isSuccessfulMatch)
+                .findFirst();
+        if (!result.isPresent()) {
+            return Optional.empty();
         }
-        return Optional.empty();
+        return Optional.of(RouteResult.of(target(), result.get().getParts(), contentType.get()));
     }
 
 }
