@@ -24,8 +24,18 @@
  */
 package com.techshroom.lettar.body;
 
+import java.util.Optional;
+
 public interface Encoder<I, O> {
 
     O encode(I input);
+
+    /**
+     * Supplies the default {@code Content-Type} header to use for the attached
+     * route.
+     */
+    default Optional<String> defaultContentType() {
+        return Optional.empty();
+    }
 
 }

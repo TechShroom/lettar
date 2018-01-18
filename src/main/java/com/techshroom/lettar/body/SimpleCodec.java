@@ -24,6 +24,8 @@
  */
 package com.techshroom.lettar.body;
 
+import java.util.Optional;
+
 /**
  * Codec for when the external and internal types for a codec are matched.
  * 
@@ -34,4 +36,41 @@ package com.techshroom.lettar.body;
  */
 public interface SimpleCodec<EXT, INT> extends Codec<EXT, INT, INT, EXT> {
 
+    /**
+     * Combination of {@link #defaultAccept()} and
+     * {@link #defaultContentType()}.
+     */
+    default Optional<String> defaultProduces() {
+        // do some work to generate a good default value
+        Optional<String> accept = Codec.super.defaultAccept();
+        if (accept.isPresent()) {
+            return accept;
+        }
+        Optional<String> contentType = Codec.super.defaultContentType();
+        return contentType;
+    }
+
+    /**
+     * {@inheritDoc}
+     * 
+     * <p>
+     * SimpleCodec: Delegates to {@link #defaultProduces()} by default.
+     * </p>
+     */
+    @Override
+    default Optional<String> defaultAccept() {
+        return defaultProduces();
+    }
+
+    /**
+     * {@inheritDoc}
+     * 
+     * <p>
+     * SimpleCodec: Delegates to {@link #defaultProduces()} by default.
+     * </p>
+     */
+    @Override
+    default Optional<String> defaultContentType() {
+        return defaultProduces();
+    }
 }

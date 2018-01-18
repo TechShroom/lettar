@@ -28,20 +28,20 @@ import java.util.Collection;
 import java.util.List;
 
 import com.google.common.collect.ImmutableList;
-import com.techshroom.lettar.Request;
 import com.techshroom.lettar.Response;
+import com.techshroom.lettar.routing.Request;
 
 public class TransformChainImpl<I, O> implements TransformChain<I, O> {
 
-    public static <I, O> TransformChainImpl<I, O> create(Collection<RouteTransform<?, ?>> transforms) {
+    public static <I, O> TransformChainImpl<I, O> create(Collection<RouteTransform<?, ?, ?>> transforms) {
         return new TransformChainImpl<>(ImmutableList.copyOf(transforms));
     }
 
-    private final List<RouteTransform<?, ?>> transforms;
+    private final List<RouteTransform<?, ?, ?>> transforms;
     private int index = -1;
     private Request<?> request;
 
-    private TransformChainImpl(List<RouteTransform<?, ?>> transforms) {
+    private TransformChainImpl(List<RouteTransform<?, ?, ?>> transforms) {
         this.transforms = transforms;
     }
 
@@ -67,8 +67,8 @@ public class TransformChainImpl<I, O> implements TransformChain<I, O> {
         TransformChainImpl<Object, Object> chain = (TransformChainImpl<Object, Object>) this;
         index++;
         try {
-            RouteTransform<Object, Object> nextTransform = nextTransform();
-            Response<O> result = (Response<O>) nextTransform.transform(chain);
+            RouteTransform<Object, Object, O> nextTransform = nextTransform();
+            Response<O> result = nextTransform.transform(chain);
             return result;
         } finally {
             index--;
@@ -76,11 +76,11 @@ public class TransformChainImpl<I, O> implements TransformChain<I, O> {
     }
 
     @SuppressWarnings("unchecked")
-    private RouteTransform<Object, Object> nextTransform() {
+    private RouteTransform<Object, Object, O> nextTransform() {
         if (index >= transforms.size()) {
             throw new IllegalStateException("Index violation, transforms=" + transforms);
         }
-        return (RouteTransform<Object, Object>) transforms.get(index);
+        return (RouteTransform<Object, Object, O>) transforms.get(index);
     }
 
 }

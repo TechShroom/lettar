@@ -22,28 +22,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.techshroom.lettar.transform;
+package com.techshroom.lettar.annotation;
 
-import com.techshroom.lettar.Response;
-import com.techshroom.lettar.routing.Request;
+import com.google.common.collect.ImmutableList;
+import com.techshroom.lettar.body.Codec;
+import com.techshroom.lettar.reflect.Constructors;
+import com.techshroom.lettar.transform.RouteTransform;
+import com.techshroom.lettar.transform.RouteTransformFactory;
 
 /**
- * Transform interface.
- * 
- * @param <I>
- *            - the body type of incoming requests
- * @param <N>
- *            - the body type of the intermediate response (internal to the
- *            transform method)
- * @param <O>
- *            - the body type of the response
+ * Sets the codec for the body content. This follows the same rules as using a
+ * {@link BodyEncoderFactory} and {@link BodyDecoderFactory}.
  */
-public interface RouteTransform<I, N, O> {
+public class BodyCodecFactory implements RouteTransformFactory<BodyCodec> {
 
-    Response<O> transform(TransformChain<I, N> chain);
-
-    default boolean acceptRequest(Request<I> request) {
-        return true;
+    @Override
+    public ImmutableList<RouteTransform<?, ?, ?>> fromMarker(BodyCodec marker) {
+        @SuppressWarnings("unchecked")
+        Codec<Object, Object, Object, Object> codec = (Codec<Object, Object, Object, Object>) Constructors.instatiate(marker.value());
+        return ImmutableList.of(new BodyEncoderFactory(codec), new BodyDecoderFactory(codec));
     }
 
 }

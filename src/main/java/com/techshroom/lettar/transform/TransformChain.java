@@ -24,8 +24,8 @@
  */
 package com.techshroom.lettar.transform;
 
-import com.techshroom.lettar.Request;
 import com.techshroom.lettar.Response;
+import com.techshroom.lettar.routing.Request;
 
 public interface TransformChain<I, O> {
 

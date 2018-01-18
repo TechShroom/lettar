@@ -40,6 +40,7 @@ import java.util.Map;
 import com.techshroom.lettar.mime.MimeType;
 import com.techshroom.lettar.reflect.MethodHandles2;
 import com.techshroom.lettar.reflect.StringConverters;
+import com.techshroom.lettar.routing.Request;
 
 class SRMethodHandles {
 

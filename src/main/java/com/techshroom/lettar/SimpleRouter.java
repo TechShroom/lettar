@@ -55,6 +55,7 @@ import com.techshroom.lettar.routing.AcceptPredicate;
 import com.techshroom.lettar.routing.HttpMethodPredicate;
 import com.techshroom.lettar.routing.KeyValuePredicate;
 import com.techshroom.lettar.routing.PathRoutePredicate;
+import com.techshroom.lettar.routing.Request;
 import com.techshroom.lettar.routing.RouteMap;
 import com.techshroom.lettar.routing.RouteResult;
 import com.techshroom.lettar.routing.RuntimeRoute;
@@ -105,6 +106,7 @@ public class SimpleRouter<IB, OB> implements Router<IB, OB> {
             if ((method.getModifiers() & Modifier.PUBLIC) == 0) {
                 continue;
             }
+            method.setAccessible(true);
             Route route = method.getAnnotation(Route.class);
             if (route != null) {
                 RouteEnhancements enhancements = RouteEnhancements.load(method);

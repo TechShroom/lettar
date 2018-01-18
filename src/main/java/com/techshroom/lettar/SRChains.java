@@ -36,13 +36,13 @@ import com.techshroom.lettar.transform.TransformChainImpl;
 class SRChains {
 
     public static <IB, OB> TransformChain<IB, OB> newChain(RouteEnhancements enhancements, MethodHandle base) {
-        ImmutableList.Builder<RouteTransform<?, ?>> transforms = ImmutableList.builder();
+        ImmutableList.Builder<RouteTransform<?, ?, ?>> transforms = ImmutableList.builder();
         transforms.addAll(enhancements.routeTransforms());
         transforms.add(baseCallTransform(base));
         return TransformChainImpl.create(transforms.build());
     }
 
-    private static RouteTransform<?, ?> baseCallTransform(MethodHandle base) {
+    private static RouteTransform<?, ?, ?> baseCallTransform(MethodHandle base) {
         return chain -> invokeHandleUnchecked(() -> base.invoke(chain.request()));
     }
 

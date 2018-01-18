@@ -68,7 +68,7 @@ public class TestRoutes {
     }
 
     @Route(path = "/json")
-    @BodyCodec.Marker(TestCodec.class)
+    @BodyCodec(TestCodec.class)
     public Response<String> json() {
         return SimpleResponse.of(200, "This Content Doesn't Matter!");
     }

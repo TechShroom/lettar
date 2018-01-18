@@ -22,28 +22,43 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.techshroom.lettar.transform;
+package com.techshroom.lettar.annotation;
 
+import com.google.auto.service.AutoService;
 import com.techshroom.lettar.Response;
+import com.techshroom.lettar.body.Decoder;
+import com.techshroom.lettar.reflect.Constructors;
 import com.techshroom.lettar.routing.Request;
+import com.techshroom.lettar.transform.RouteTransform;
+import com.techshroom.lettar.transform.TransformChain;
 
 /**
- * Transform interface.
- * 
- * @param <I>
- *            - the body type of incoming requests
- * @param <N>
- *            - the body type of the intermediate response (internal to the
- *            transform method)
- * @param <O>
- *            - the body type of the response
+ * Sets the decoder for the body content. The accepted request from the method
+ * can contain anything that the decoder returns.
  */
-public interface RouteTransform<I, N, O> {
+@AutoService(RouteTransform.class)
+public class BodyDecoderFactory implements RouteTransform<Object, Object, Object> {
 
-    Response<O> transform(TransformChain<I, N> chain);
-
-    default boolean acceptRequest(Request<I> request) {
-        return true;
+    public static BodyDecoderFactory fromMarker(BodyDecoder marker) {
+        @SuppressWarnings("unchecked")
+        Decoder<Object, Object> decoder = (Decoder<Object, Object>) Constructors.instatiate(marker.value());
+        return new BodyDecoderFactory(decoder);
     }
 
+    private final Decoder<Object, Object> decoder;
+
+    BodyDecoderFactory(Decoder<Object, Object> decoder) {
+        this.decoder = decoder;
+    }
+
+    @Override
+    public Response<Object> transform(TransformChain<Object, Object> chain) {
+        Request<Object> req = chain.request();
+        return chain.withRequest(req.withBody(decoder.decode(req.getBody()))).next();
+    }
+    
+    @Override
+    public boolean acceptRequest(Request<Object> request) {
+        return RouteTransform.super.acceptRequest(request);
+    }
 }

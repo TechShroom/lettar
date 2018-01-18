@@ -24,19 +24,27 @@
  */
 package com.techshroom.lettar.reflect;
 
+import java.lang.reflect.InvocationTargetException;
+
 import com.google.common.base.Throwables;
 
 public class Constructors {
 
     public static <T> T instatiate(Class<T> clazz) {
         try {
-            return clazz.newInstance();
-        } catch (InstantiationException e) {
+            return clazz.getConstructor().newInstance();
+        } catch (InvocationTargetException e) {
             Throwable cause = e.getCause();
             Throwables.throwIfUnchecked(cause);
             throw new RuntimeException(cause);
         } catch (IllegalAccessException e) {
             throw new IllegalArgumentException("Only public constructors allowed", e);
+        } catch (InstantiationException e) {
+            throw new IllegalArgumentException("Only concrete classes allowed", e);
+        } catch (NoSuchMethodException e) {
+            throw new IllegalArgumentException("No-args constructor required", e);
+        } catch (SecurityException e) {
+            throw new RuntimeException(e);
         }
     }
 

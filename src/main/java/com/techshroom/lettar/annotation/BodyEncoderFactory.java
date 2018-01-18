@@ -22,19 +22,37 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.techshroom.lettar;
+package com.techshroom.lettar.annotation;
 
-import javax.annotation.Nullable;
+import com.google.auto.service.AutoService;
+import com.techshroom.lettar.Response;
+import com.techshroom.lettar.body.Encoder;
+import com.techshroom.lettar.reflect.Constructors;
+import com.techshroom.lettar.transform.RouteTransform;
+import com.techshroom.lettar.transform.TransformChain;
 
 /**
- * A request is something that needs routing. It is made up of a path, query
- * parts, a method, headers, and body.
+ * Sets the encoder for the body content. The response from the method can
+ * contain anything that the encoder accepts.
  */
-public interface Request<B> extends com.techshroom.lettar.routing.Request {
+@AutoService(RouteTransform.class)
+public class BodyEncoderFactory implements RouteTransform<Object, Object, Object> {
 
-    @Nullable
-    B getBody();
+    public static BodyEncoderFactory fromMarker(BodyEncoder marker) {
+        @SuppressWarnings("unchecked")
+        Encoder<Object, Object> encoder = (Encoder<Object, Object>) Constructors.instatiate(marker.value());
+        return new BodyEncoderFactory(encoder);
+    }
 
-    <U> Request<U> withBody(@Nullable U body);
+    private final Encoder<Object, Object> encoder;
 
+    BodyEncoderFactory(Encoder<Object, Object> decoder) {
+        this.encoder = decoder;
+    }
+
+    @Override
+    public Response<Object> transform(TransformChain<Object, Object> chain) {
+        Response<Object> res = chain.next();
+        return res.withBody(encoder.encode(res.getBody()));
+    }
 }

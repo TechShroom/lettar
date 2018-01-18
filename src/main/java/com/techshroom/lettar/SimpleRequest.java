@@ -29,6 +29,7 @@ import javax.annotation.Nullable;
 import com.google.auto.value.AutoValue;
 import com.techshroom.lettar.collections.HttpMultimap;
 import com.techshroom.lettar.routing.HttpMethod;
+import com.techshroom.lettar.routing.Request;
 
 @AutoValue
 public abstract class SimpleRequest<B> implements Request<B> {

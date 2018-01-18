@@ -64,7 +64,7 @@ public abstract class RouteEnhancements {
 
         Builder produces(String[] produces);
 
-        ImmutableList.Builder<RouteTransform<?, ?>> routeTransformsBuilder();
+        ImmutableList.Builder<RouteTransform<?, ?, ?>> routeTransformsBuilder();
 
         RouteEnhancements build();
 
@@ -72,6 +72,6 @@ public abstract class RouteEnhancements {
 
     public abstract ImmutableList<String> produces();
 
-    public abstract ImmutableList<RouteTransform<?, ?>> routeTransforms();
+    public abstract ImmutableList<RouteTransform<?, ?, ?>> routeTransforms();
 
 }

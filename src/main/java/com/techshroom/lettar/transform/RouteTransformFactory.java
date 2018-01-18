@@ -29,14 +29,14 @@ import java.lang.annotation.Annotation;
 import com.google.common.collect.ImmutableList;
 
 /**
- * RTF must have an inner class named "Marker", the Marker must be type used in
- * M. Failure to follow this rule will result in runtime exceptions.
+ * Subclasses should be named {@code Xyz}<em>Factory</em>. The {@code Factory}
+ * part will be removed to retrieve the annotation type.
  * 
  * @param <M>
  *            - the inner marker type
  */
 public interface RouteTransformFactory<M extends Annotation> {
 
-    ImmutableList<RouteTransform<?, ?>> fromMarker(M marker);
+    ImmutableList<RouteTransform<?, ?, ?>> fromMarker(M marker);
 
 }

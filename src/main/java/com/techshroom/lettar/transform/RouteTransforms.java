@@ -43,10 +43,17 @@ public class RouteTransforms {
         ImmutableMap.Builder<Class<?>, RouteTransformFactory<?>> builder = ImmutableMap.builder();
         for (RouteTransformFactory<?> rtf : rtfs) {
             Class<?> annotation;
+            String className = rtf.getClass().getCanonicalName();
+            if (!className.endsWith("Factory")) {
+                throw new IllegalStateException(RouteTransformFactory.class.getSimpleName() + 
+                        " implementations must end their class name with Factory.");
+            }
+            int beforeFactory = className.lastIndexOf("Factory");
+            String annotClassName = className.substring(0, beforeFactory);
             try {
-                annotation = Class.forName(rtf.getClass().getCanonicalName() + ".Marker");
+                annotation = Class.forName(annotClassName);
             } catch (ClassNotFoundException e) {
-                throw new IllegalStateException("Missing Marker class for " + rtf.getClass());
+                throw new IllegalStateException("Missing annotation class for " + rtf.getClass());
             }
 
             builder.put(annotation, rtf);
@@ -56,7 +63,7 @@ public class RouteTransforms {
 
     private static final Map<Class<?>, RouteTransformFactory<?>> FACTORIES = discoverFactories();
 
-    public static <A extends Annotation> ImmutableList<RouteTransform<?, ?>> from(A annotation) {
+    public static <A extends Annotation> ImmutableList<RouteTransform<?, ?, ?>> from(A annotation) {
         @SuppressWarnings("unchecked")
         RouteTransformFactory<A> factory = (RouteTransformFactory<A>) FACTORIES.get(annotation.getClass());
         if (factory == null) {

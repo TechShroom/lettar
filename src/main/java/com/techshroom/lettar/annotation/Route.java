@@ -30,7 +30,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import com.techshroom.lettar.Request;
 import com.techshroom.lettar.Response;
 import com.techshroom.lettar.mime.MimeType;
 import com.techshroom.lettar.routing.HttpMethod;
