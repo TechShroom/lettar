@@ -38,6 +38,7 @@ import org.slf4j.Logger;
 import com.google.common.collect.ImmutableList;
 import com.techshroom.lettar.BaseRouterInitializer;
 import com.techshroom.lettar.Logging;
+import com.techshroom.lettar.Request;
 import com.techshroom.lettar.Response;
 import com.techshroom.lettar.Router;
 import com.techshroom.lettar.SimpleRequest;
@@ -50,7 +51,6 @@ import com.techshroom.lettar.pipe.PipelineRouter.Builder;
 import com.techshroom.lettar.pipe.builtins.PathInputPipe;
 import com.techshroom.lettar.pipe.builtins.accept.AcceptPipe;
 import com.techshroom.lettar.pipe.impl.SimplePipeline;
-import com.techshroom.lettar.routing.Request;
 
 public class PipelineRouterInitializer extends BaseRouterInitializer<PipelineRouter.Builder> {
 

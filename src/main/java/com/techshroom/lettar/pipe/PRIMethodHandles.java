@@ -32,10 +32,10 @@ import static java.lang.invoke.MethodHandles.insertArguments;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
 
+import com.techshroom.lettar.Request;
 import com.techshroom.lettar.Response;
 import com.techshroom.lettar.mime.MimeType;
 import com.techshroom.lettar.reflect.StringConverters;
-import com.techshroom.lettar.routing.Request;
 
 class PRIMethodHandles {
 

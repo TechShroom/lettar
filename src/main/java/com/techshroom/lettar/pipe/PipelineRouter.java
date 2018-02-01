@@ -34,11 +34,11 @@ import org.slf4j.Logger;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.techshroom.lettar.Logging;
+import com.techshroom.lettar.Request;
 import com.techshroom.lettar.Response;
 import com.techshroom.lettar.Router;
 import com.techshroom.lettar.SimpleResponse;
 import com.techshroom.lettar.collections.HttpMultimap;
-import com.techshroom.lettar.routing.Request;
 
 public class PipelineRouter<IB, OB> implements Router<IB, OB> {
 

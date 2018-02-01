@@ -24,8 +24,6 @@
  */
 package com.techshroom.lettar;
 
-import com.techshroom.lettar.routing.Request;
-
 /**
  * Routes a request, and returns a response.
  */

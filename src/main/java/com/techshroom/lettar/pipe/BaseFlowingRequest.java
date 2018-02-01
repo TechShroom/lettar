@@ -29,7 +29,7 @@ import java.util.function.Function;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
-import com.techshroom.lettar.routing.Request;
+import com.techshroom.lettar.Request;
 
 class BaseFlowingRequest extends BaseFlowingElement<FlowingRequest> implements FlowingRequest {
 

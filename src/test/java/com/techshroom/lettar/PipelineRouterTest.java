@@ -36,7 +36,6 @@ import com.google.common.collect.Multimap;
 import com.techshroom.lettar.collections.HttpMultimap;
 import com.techshroom.lettar.pipe.PipelineRouterInitializer;
 import com.techshroom.lettar.routing.HttpMethod;
-import com.techshroom.lettar.routing.Request;
 
 public class PipelineRouterTest {
 

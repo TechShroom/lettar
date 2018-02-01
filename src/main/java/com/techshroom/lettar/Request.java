@@ -22,11 +22,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.techshroom.lettar.routing;
+package com.techshroom.lettar;
 
 import javax.annotation.Nullable;
 
 import com.techshroom.lettar.collections.HttpMultimap;
+import com.techshroom.lettar.routing.HttpMethod;
 
 /**
  * A request is something that needs routing. It is made up of a path, query
