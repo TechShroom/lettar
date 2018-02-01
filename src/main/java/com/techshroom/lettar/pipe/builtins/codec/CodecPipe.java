@@ -24,6 +24,7 @@
  */
 package com.techshroom.lettar.pipe.builtins.codec;
 
+import com.google.common.base.MoreObjects;
 import com.techshroom.lettar.pipe.BiPipe;
 import com.techshroom.lettar.pipe.FlowingRequest;
 import com.techshroom.lettar.pipe.FlowingResponse;
@@ -48,6 +49,12 @@ public class CodecPipe<DI, DO, EI, EO> implements BiPipe {
     @Override
     public FlowingResponse pipeOut(FlowingResponse response) {
         return encoder.pipeOut(response);
+    }@Override
+    public String toString() {
+        return MoreObjects.toStringHelper(this)
+                .add("decoder", decoder)
+                .add("encoder", encoder)
+                .toString();
     }
 
 }

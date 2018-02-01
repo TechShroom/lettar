@@ -63,4 +63,9 @@ public class AcceptPipe implements BiPipe {
         MimeType contentType = response.getRequest().get(AcceptPipe.contentType);
         return response.modify(ResponseKeys.headers, headers -> headers.setIfAbsent("content-type", contentType.toString()));
     }
+
+    @Override
+    public String toString() {
+        return "Accept{" + acceptMatcher + "}";
+    }
 }

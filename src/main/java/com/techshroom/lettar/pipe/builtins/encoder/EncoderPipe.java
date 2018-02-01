@@ -44,4 +44,8 @@ public class EncoderPipe<I, O> implements OutputPipe {
         return response.with(ResponseKeys.body(), output);
     }
 
+    @Override
+    public String toString() {
+        return encoder.toString();
+    }
 }

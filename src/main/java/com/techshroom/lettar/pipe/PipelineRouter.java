@@ -24,11 +24,16 @@
  */
 package com.techshroom.lettar.pipe;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.util.List;
 import java.util.Objects;
 
+import org.slf4j.Logger;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.techshroom.lettar.Logging;
 import com.techshroom.lettar.Response;
 import com.techshroom.lettar.Router;
 import com.techshroom.lettar.SimpleResponse;
@@ -36,6 +41,8 @@ import com.techshroom.lettar.collections.HttpMultimap;
 import com.techshroom.lettar.routing.Request;
 
 public class PipelineRouter<IB, OB> implements Router<IB, OB> {
+
+    private static final Logger LOGGER = Logging.getLogger();
 
     public static Builder builder() {
         return new Builder();
@@ -66,6 +73,8 @@ public class PipelineRouter<IB, OB> implements Router<IB, OB> {
         }
 
         public <IB, OB> PipelineRouter<IB, OB> build() {
+            checkNotNull(notFoundPipeline, "A NotFoundHandler is required.");
+            checkNotNull(serverErrorPipeline, "A ServerErrorHandler is required.");
             return new PipelineRouter<>(pipelines.build(), notFoundPipeline, serverErrorPipeline);
         }
 
@@ -116,23 +125,28 @@ public class PipelineRouter<IB, OB> implements Router<IB, OB> {
         return handleError(request, new IllegalStateException(error), false);
     }
 
-    private static final HttpMultimap OH_NO_HEADERS = HttpMultimap.copyOf(ImmutableMap.of(
-            "X-BadCode", "true",
-            "X-HitchhikerCount", "42",
-            "X-Quest", "Seek the Holy Grail",
-            "X-XIsThisCodeTryingTooHardToBeFunny", "true"));
+    private static final String OH_NO_BODY = "A pipeline leaked while handling another error. This is very bad. Contact the nearest developer immediately.\n";
+    private static final HttpMultimap OH_NO_HEADERS = HttpMultimap.copyOf(
+            ImmutableMap.<String, String> builder()
+                    .put("X-BadCode", "true")
+                    .put("X-HitchhikerCount", "42")
+                    .put("X-Quest", "Seek the Holy Grail")
+                    .put("X-IsThisCodeTryingTooHardToBeFunny", "true")
+                    .put("Content-length", String.valueOf(OH_NO_BODY.length()))
+                    .put("Content-type", "text/plain")
+                    .build());
 
     private FlowingResponse handleError(FlowingRequest request, Throwable t, boolean firstError) {
+        if (!firstError) {
+            LOGGER.error("Bad pipeline state detected", t);
+            return BaseFlowingResponse.from(500,
+                    OH_NO_BODY,
+                    OH_NO_HEADERS);
+        }
         FlowingRequest reqWithErr = request.with(RequestKeys.error, t);
         FlowingResponse response = executePipeline(serverErrorPipeline, reqWithErr);
         if (response == null) {
-            if (firstError) {
-                return handleStateError(request, "Server Error Pipeline overflow detected.");
-            } else {
-                return BaseFlowingResponse.from(500,
-                        "Server Error Pipeline overflowed while handling another error. This is very bad. Contact the nearest developer immediately.",
-                        OH_NO_HEADERS);
-            }
+            return handleStateError(request, "Server Error Pipeline overflow detected.");
         }
         return response;
     }

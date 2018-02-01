@@ -44,4 +44,9 @@ public class DecoderPipe<I, O> implements InputPipe {
         return request.with(RequestKeys.body(), output);
     }
 
+    @Override
+    public String toString() {
+        return decoder.toString();
+    }
+
 }

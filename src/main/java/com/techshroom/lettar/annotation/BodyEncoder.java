@@ -33,10 +33,12 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 import com.techshroom.lettar.body.Encoder;
+import com.techshroom.lettar.pipe.PipeCompatible;
 
 @Documented
 @Retention(RUNTIME)
 @Target({ TYPE, METHOD })
+@PipeCompatible
 public @interface BodyEncoder {
 
     Class<? extends Encoder<?, ?>> value();

@@ -132,4 +132,9 @@ public abstract class AcceptPredicate {
                 .findAny();
     }
 
+    @Override
+    public String toString() {
+        return getMimeTypes().toString();
+    }
+
 }

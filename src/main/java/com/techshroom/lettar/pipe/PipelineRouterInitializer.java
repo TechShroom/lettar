@@ -31,9 +31,13 @@ import static com.techshroom.lettar.reflect.MethodHandles2.safeUnreflect;
 import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.function.Consumer;
+
+import org.slf4j.Logger;
 
 import com.google.common.collect.ImmutableList;
 import com.techshroom.lettar.BaseRouterInitializer;
+import com.techshroom.lettar.Logging;
 import com.techshroom.lettar.Response;
 import com.techshroom.lettar.Router;
 import com.techshroom.lettar.SimpleRequest;
@@ -49,6 +53,8 @@ import com.techshroom.lettar.pipe.impl.SimplePipeline;
 import com.techshroom.lettar.routing.Request;
 
 public class PipelineRouterInitializer extends BaseRouterInitializer<PipelineRouter.Builder> {
+
+    private static final Logger LOGGER = Logging.getLogger();
 
     @Override
     protected <IB, OB> Router<IB, OB> newRouter(Builder carrier) {
@@ -72,23 +78,28 @@ public class PipelineRouterInitializer extends BaseRouterInitializer<PipelineRou
 
             InheritanceHelper methodInheritance = baseInheritance.inherit(m);
 
+            Handler handler;
+            Consumer<Pipeline> pipelineConsumer;
             if (m.isAnnotationPresent(ServerErrorHandler.class)) {
-                carrier.serverErrorPipeline(serverErrorHandler(controller, m));
+                handler = serverErrorHandler(controller, m);
+                pipelineConsumer = carrier::serverErrorPipeline;
             } else if (m.isAnnotationPresent(NotFoundHandler.class)) {
-                carrier.notFoundPipeline(notFoundHandler(controller, m));
+                handler = notFoundHandler(controller, m);
+                pipelineConsumer = carrier::notFoundPipeline;
             } else {
-                Handler handler = wrapMethod(controller, m);
-                Pipeline pipe = pipeInheritorMap(methodInheritance.getInheritorMap(), handler);
-                carrier.addPipeline(pipe);
+                handler = wrapMethod(controller, m);
+                pipelineConsumer = carrier::addPipeline;
             }
+            Pipeline pipe = pipeInheritorMap(methodInheritance.getInheritorMap(), handler);
+            pipelineConsumer.accept(pipe);
         }
     }
 
-    private Pipeline serverErrorHandler(Object controller, Method m) {
+    private Handler serverErrorHandler(Object controller, Method m) {
         MethodHandle base = safeUnreflect(m).bindTo(controller);
         MethodHandle call = PRIMethodHandles.errorHandlerTransform(base, m.getName());
 
-        return SimplePipeline.create(ImmutableList.of(), flowReq -> {
+        return flowReq -> {
             Request<Object> request = requestFromFlow(flowReq);
             Throwable err = flowReq.get(RequestKeys.error);
 
@@ -96,24 +107,23 @@ public class PipelineRouterInitializer extends BaseRouterInitializer<PipelineRou
                 return call.invoke(request, err);
             });
 
-            return adaptResponse(response);
-        }, ImmutableList.of());
+            return adaptResponse(response, flowReq);
+        };
     }
 
-    private Pipeline notFoundHandler(Object controller, Method m) {
+    private Handler notFoundHandler(Object controller, Method m) {
         MethodHandle base = safeUnreflect(m).bindTo(controller);
         MethodHandle call = PRIMethodHandles.notFoundHandlerTransform(base, m.getName());
 
-        return SimplePipeline.create(ImmutableList.of(), flowReq -> {
+        return flowReq -> {
             Request<Object> request = requestFromFlow(flowReq);
 
             Response<Object> response = invokeHandleUnchecked(() -> {
                 return call.invoke(request);
             });
 
-            return adaptResponse(response);
-        }, ImmutableList.of());
-
+            return adaptResponse(response, flowReq);
+        };
     }
 
     private Handler wrapMethod(Object controller, Method handler) {
@@ -134,7 +144,7 @@ public class PipelineRouterInitializer extends BaseRouterInitializer<PipelineRou
                 return call.invoke(request, contentType, pathPartsArray);
             });
 
-            return adaptResponse(response).with(ResponseKeys.request, flowReq);
+            return adaptResponse(response, flowReq);
         };
     }
 
@@ -149,8 +159,9 @@ public class PipelineRouterInitializer extends BaseRouterInitializer<PipelineRou
         return request;
     }
 
-    private static FlowingResponse adaptResponse(Response<Object> response) {
-        return BaseFlowingResponse.from(response.getStatusCode(), response.getBody(), response.getHeaders());
+    private static FlowingResponse adaptResponse(Response<Object> response, FlowingRequest request) {
+        return BaseFlowingResponse.from(response.getStatusCode(), response.getBody(), response.getHeaders())
+                .with(ResponseKeys.request, request);
     }
 
     private Pipeline pipeInheritorMap(InheritorMap map, Handler handler) {
@@ -165,7 +176,10 @@ public class PipelineRouterInitializer extends BaseRouterInitializer<PipelineRou
                 outPipes.add((OutputPipe) pipe);
             }
         }
-        return SimplePipeline.create(inPipes.build(), handler, outPipes.build());
+        ImmutableList<InputPipe> in = inPipes.build();
+        ImmutableList<OutputPipe> out = outPipes.build();
+        LOGGER.debug("New pipeline: in={}, out={}", in, out);
+        return SimplePipeline.create(in, handler, out);
     }
 
 }
