@@ -24,14 +24,15 @@
  */
 package com.techshroom.lettar.routing;
 
+import javax.annotation.Nullable;
+
 import com.techshroom.lettar.collections.HttpMultimap;
 
 /**
  * A request is something that needs routing. It is made up of a path, query
- * parts, a method and headers. For HTTP handling, there's another interface
- * with the body as well.
+ * parts, a method and headers.
  */
-public interface Request {
+public interface Request<B> {
 
     String getPath();
 
@@ -40,5 +41,10 @@ public interface Request {
     HttpMultimap getHeaders();
 
     HttpMethod getMethod();
+
+    @Nullable
+    B getBody();
+
+    <U> Request<U> withBody(@Nullable U body);
 
 }

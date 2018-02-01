@@ -38,6 +38,9 @@ import com.google.common.base.Splitter.MapSplitter;
 import com.google.common.collect.ImmutableSet;
 import com.techshroom.lettar.mime.MimeType;
 
+// TODO this should function more like the other predicates
+// i.e. each MimeType should be one AcceptPredicate
+// all other stuff should be handled by AcceptPipe
 @AutoValue
 public abstract class AcceptPredicate {
 

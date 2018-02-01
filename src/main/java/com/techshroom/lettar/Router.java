@@ -24,12 +24,12 @@
  */
 package com.techshroom.lettar;
 
+import com.techshroom.lettar.routing.Request;
+
 /**
  * Routes a request, and returns a response.
  */
 public interface Router<IB, OB> {
-
-    void registerRoutes(Iterable<?> routes);
 
     Response<OB> route(Request<IB> request);
 

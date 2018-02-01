@@ -32,32 +32,12 @@ import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-import com.google.common.collect.ImmutableList;
-import com.techshroom.lettar.annotation.BodyCodec.Marker;
 import com.techshroom.lettar.body.Codec;
-import com.techshroom.lettar.reflect.Constructors;
-import com.techshroom.lettar.transform.RouteTransform;
-import com.techshroom.lettar.transform.RouteTransformFactory;
 
-/**
- * Sets the codec for the body content. This follows the same rules as using a
- * {@link BodyEncoder} and {@link BodyDecoder}.
- */
-public class BodyCodec implements RouteTransformFactory<Marker> {
+@Documented
+@Retention(RUNTIME)
+@Target({ TYPE, METHOD })
+public @interface BodyCodec {
 
-    @Documented
-    @Retention(RUNTIME)
-    @Target({ TYPE, METHOD })
-    public @interface Marker {
-
-        Class<? extends Codec<?, ?, ?, ?>> value();
-    }
-
-    @Override
-    public ImmutableList<RouteTransform<?, ?>> fromMarker(Marker marker) {
-        @SuppressWarnings("unchecked")
-        Codec<Object, Object, Object, Object> codec = (Codec<Object, Object, Object, Object>) Constructors.instatiate(marker.value());
-        return ImmutableList.of(new BodyEncoder(codec), new BodyDecoder(codec));
-    }
-
+    Class<? extends Codec<?, ?, ?, ?>> value();
 }

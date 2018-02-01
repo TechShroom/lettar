@@ -32,44 +32,12 @@ import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-import com.google.auto.service.AutoService;
-import com.techshroom.lettar.Request;
-import com.techshroom.lettar.Response;
 import com.techshroom.lettar.body.Decoder;
-import com.techshroom.lettar.reflect.Constructors;
-import com.techshroom.lettar.transform.RouteTransform;
-import com.techshroom.lettar.transform.TransformChain;
 
-/**
- * Sets the decoder for the body content. The accepted request from the method
- * can contain anything that the decoder returns.
- */
-@AutoService(RouteTransform.class)
-public class BodyDecoder implements RouteTransform<Object, Object> {
+@Documented
+@Retention(RUNTIME)
+@Target({ TYPE, METHOD })
+public @interface BodyDecoder {
 
-    @Documented
-    @Retention(RUNTIME)
-    @Target({ TYPE, METHOD })
-    public @interface Marker {
-
-        Class<? extends Decoder<?, ?>> value();
-    }
-
-    public static BodyDecoder fromMarker(Marker marker) {
-        @SuppressWarnings("unchecked")
-        Decoder<Object, Object> decoder = (Decoder<Object, Object>) Constructors.instatiate(marker.value());
-        return new BodyDecoder(decoder);
-    }
-
-    private final Decoder<Object, Object> decoder;
-
-    BodyDecoder(Decoder<Object, Object> decoder) {
-        this.decoder = decoder;
-    }
-
-    @Override
-    public Response<Object> transform(TransformChain<Object, Object> chain) {
-        Request<Object> req = chain.request();
-        return chain.withRequest(req.withBody(decoder.decode(req.getBody()))).next();
-    }
+    Class<? extends Decoder<?, ?>> value();
 }

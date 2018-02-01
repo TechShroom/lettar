@@ -95,4 +95,9 @@ public abstract class MimeType {
         return mtSec.equals("*") || mtSec.equals(getSecondaryType());
     }
 
+    @Override
+    public String toString() {
+        return getPrimaryType() + "/" + getSecondaryType();
+    }
+
 }

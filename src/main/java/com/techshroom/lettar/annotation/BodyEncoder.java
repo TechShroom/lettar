@@ -32,43 +32,12 @@ import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-import com.google.auto.service.AutoService;
-import com.techshroom.lettar.Response;
 import com.techshroom.lettar.body.Encoder;
-import com.techshroom.lettar.reflect.Constructors;
-import com.techshroom.lettar.transform.RouteTransform;
-import com.techshroom.lettar.transform.TransformChain;
 
-/**
- * Sets the encoder for the body content. The response from the method can
- * contain anything that the encoder accepts.
- */
-@AutoService(RouteTransform.class)
-public class BodyEncoder implements RouteTransform<Object, Object> {
+@Documented
+@Retention(RUNTIME)
+@Target({ TYPE, METHOD })
+public @interface BodyEncoder {
 
-    @Documented
-    @Retention(RUNTIME)
-    @Target({ TYPE, METHOD })
-    public @interface Marker {
-
-        Class<? extends Encoder<?, ?>> value();
-    }
-
-    public static BodyEncoder fromMarker(Marker marker) {
-        @SuppressWarnings("unchecked")
-        Encoder<Object, Object> encoder = (Encoder<Object, Object>) Constructors.instatiate(marker.value());
-        return new BodyEncoder(encoder);
-    }
-
-    private final Encoder<Object, Object> encoder;
-
-    BodyEncoder(Encoder<Object, Object> decoder) {
-        this.encoder = decoder;
-    }
-
-    @Override
-    public Response<Object> transform(TransformChain<Object, Object> chain) {
-        Response<Object> res = chain.next();
-        return res.withBody(encoder.encode(res.getBody()));
-    }
+    Class<? extends Encoder<?, ?>> value();
 }

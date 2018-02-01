@@ -25,62 +25,62 @@
 package com.techshroom.lettar;
 
 import com.google.common.base.Throwables;
-import com.techshroom.lettar.annotation.BodyCodec;
 import com.techshroom.lettar.annotation.NotFoundHandler;
-import com.techshroom.lettar.annotation.Route;
 import com.techshroom.lettar.annotation.ServerErrorHandler;
+import com.techshroom.lettar.pipe.builtins.path.Path;
+import com.techshroom.lettar.pipe.builtins.query.Query;
 
 public class TestRoutes {
 
-    @Route(path = "/")
+    @Path("/")
     public Response<String> index() {
         return SimpleResponse.of(200, "Index Page");
     }
 
-    @Route(path = "/query", params = "page=index")
+    @Path("/query")
+    @Query("page=index")
     public Response<String> queryIndex() {
         return SimpleResponse.of(200, "Queried 'index' Page");
     }
 
-    @Route(path = "/query", params = "page=action")
+    @Path("/query")
+    @Query("page=action")
     public Response<String> queryAction() {
         return SimpleResponse.of(200, "Queried 'action' Page");
     }
 
-    @Route(path = "/{*}/list")
+    @Path("/{*}/list")
     public Response<String> resouceList(String resourceType) {
         return SimpleResponse.of(200, "[a,b,c," + resourceType + "]");
     }
 
-    @Route(path = "/ec/{**}")
+    @Path("/ec/{**}")
     public Response<String> endChomp(String chomped) {
         return SimpleResponse.of(200, "CHOMP! " + chomped);
     }
 
-    @Route(path = "/re/{re:\\d+}")
+    @Path("/re/{re:\\d+}")
     public Response<String> endChomp(int number) {
         return SimpleResponse.of(200, "RE: " + number);
     }
 
-    @Route(path = "/error")
+    @Path("/error")
     public Response<String> getError() {
         throw new AssertionError("Error Here");
     }
 
-    @Route(path = "/json")
-    @BodyCodec.Marker(TestCodec.class)
+    @Path("/json")
+    @TestBodyCodec
     public Response<String> json() {
         return SimpleResponse.of(200, "This Content Doesn't Matter!");
     }
 
     @ServerErrorHandler
-    public Response<String> error(Exception error) {
+    public Response<String> error(Throwable error) {
+        if (error instanceof AssertionError) {
+            return SimpleResponse.of(500, error.getMessage());
+        }
         return SimpleResponse.of(500, "Error encountered: " + Throwables.getStackTraceAsString(error));
-    }
-
-    @ServerErrorHandler(exception = AssertionError.class)
-    public Response<String> assertionFailed(AssertionError error) {
-        return SimpleResponse.of(500, "Error encountered: " + error.getMessage());
     }
 
     @NotFoundHandler
