@@ -1,11 +1,12 @@
 <configuration>
 	<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-		<!-- encoders are assigned the type ch.qos.logback.classic.encoder.PatternLayoutEncoder 
-			by default -->
 		<encoder>
 			<pattern>[%thread/%level][%logger{1}]: %msg %n</pattern>
 		</encoder>
 	</appender>
+	
+	<logger name="com.techshroom.lettar.pipe.impl.SimplePipeline" level="INFO">
+	</logger>
 
 	<root level="DEBUG">
 		<appender-ref ref="STDOUT" />

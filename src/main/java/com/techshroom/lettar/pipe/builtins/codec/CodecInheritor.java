@@ -25,7 +25,6 @@
 package com.techshroom.lettar.pipe.builtins.codec;
 
 import com.google.auto.service.AutoService;
-import com.google.common.base.Throwables;
 import com.techshroom.lettar.annotation.BodyCodec;
 import com.techshroom.lettar.body.Codec;
 import com.techshroom.lettar.inheiritor.Inheritor;
@@ -33,22 +32,14 @@ import com.techshroom.lettar.inheiritor.ReplacingInheritor;
 import com.techshroom.lettar.pipe.Pipe;
 import com.techshroom.lettar.pipe.builtins.decoder.DecoderPipe;
 import com.techshroom.lettar.pipe.builtins.encoder.EncoderPipe;
+import com.techshroom.lettar.reflect.Constructors;
 
 @AutoService(Inheritor.class)
 public class CodecInheritor extends ReplacingInheritor<Class<? extends Codec<?, ?, ?, ?>>, BodyCodec> {
 
     @Override
     public Pipe createPipe(Class<? extends Codec<?, ?, ?, ?>> data) {
-        Codec<?, ?, ?, ?> codec;
-        try {
-            codec = data.newInstance();
-        } catch (InstantiationException e) {
-            Throwable t = e.getCause();
-            Throwables.throwIfUnchecked(t);
-            throw new RuntimeException(t);
-        } catch (IllegalAccessException e) {
-            throw new IllegalStateException("access denied to " + data.getName() + " constructor", e);
-        }
+        Codec<?, ?, ?, ?> codec = Constructors.instatiate(data);
         return new CodecPipe<>(new DecoderPipe<>(codec), new EncoderPipe<>(codec));
     }
 

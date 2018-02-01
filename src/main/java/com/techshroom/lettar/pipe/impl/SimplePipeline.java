@@ -26,7 +26,10 @@ package com.techshroom.lettar.pipe.impl;
 
 import java.util.List;
 
+import org.slf4j.Logger;
+
 import com.google.common.collect.ImmutableList;
+import com.techshroom.lettar.Logging;
 import com.techshroom.lettar.pipe.FlowingRequest;
 import com.techshroom.lettar.pipe.FlowingResponse;
 import com.techshroom.lettar.pipe.Handler;
@@ -35,6 +38,8 @@ import com.techshroom.lettar.pipe.OutputPipe;
 import com.techshroom.lettar.pipe.Pipeline;
 
 public class SimplePipeline implements Pipeline {
+    
+    private static final Logger LOGGER = Logging.getLogger();
 
     // TODO if we want performance, this could _easily_ be redone with
     // MethodHandles
@@ -84,13 +89,15 @@ public class SimplePipeline implements Pipeline {
     }
 
     private FlowingRequest pipeInput(FlowingRequest request) {
+        FlowingRequest piping = request;
         for (InputPipe pipe : getInputPipes()) {
-            request = pipe.pipeIn(request);
-            if (request == null) {
+            piping = pipe.pipeIn(piping);
+            if (piping == null) {
+                LOGGER.debug("{}: overflowed in pipe {}", request, pipe);
                 return null;
             }
         }
-        return request;
+        return piping;
     }
 
     private FlowingResponse pipeOutput(FlowingResponse response) {

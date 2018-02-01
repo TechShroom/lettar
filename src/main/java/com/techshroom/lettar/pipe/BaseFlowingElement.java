@@ -29,7 +29,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
+import com.google.common.base.Joiner;
+import com.google.common.base.Joiner.MapJoiner;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 
 public abstract class BaseFlowingElement<SELF extends FlowingElement<SELF>> implements FlowingElement<SELF> {
 
@@ -78,6 +81,23 @@ public abstract class BaseFlowingElement<SELF extends FlowingElement<SELF>> impl
     @Override
     public Builder<SELF> toBuilder() {
         return new BFEBuilder<>(map, constructFunction());
+    }
+
+    private static final MapJoiner MAP_JOINER = Joiner.on(',')
+            .withKeyValueSeparator('=')
+            .useForNull("null");
+
+    @Override
+    public String toString() {
+        StringBuilder b = new StringBuilder("{");
+        MAP_JOINER.appendTo(b,
+                map.entrySet().stream()
+                        .map(e -> {
+                            return Maps.immutableEntry(e.getKey(), e.getValue().orElse(null));
+                        })
+                        .iterator());
+        b.append('}');
+        return b.toString();
     }
 
 }

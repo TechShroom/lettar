@@ -29,4 +29,10 @@ package com.techshroom.lettar.pipe;
  */
 public interface Pipe {
 
+    /**
+     * Pipes should implement toString for better errors.
+     */
+    @Override
+    String toString();
+
 }

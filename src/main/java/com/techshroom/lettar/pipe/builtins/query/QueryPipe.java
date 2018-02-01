@@ -28,11 +28,11 @@ import java.util.List;
 
 import com.google.common.collect.ImmutableList;
 import com.techshroom.lettar.collections.HttpMultimap;
+import com.techshroom.lettar.pipe.FilteringPipe;
 import com.techshroom.lettar.pipe.FlowingRequest;
-import com.techshroom.lettar.pipe.InputPipe;
 import com.techshroom.lettar.routing.KeyValuePredicate;
 
-public class QueryPipe implements InputPipe {
+public class QueryPipe implements FilteringPipe {
 
     public static QueryPipe create(List<KeyValuePredicate> queryMatcher) {
         return new QueryPipe(ImmutableList.copyOf(queryMatcher));
@@ -45,11 +45,14 @@ public class QueryPipe implements InputPipe {
     }
 
     @Override
-    public FlowingRequest pipeIn(FlowingRequest request) {
+    public boolean filter(FlowingRequest request) {
         HttpMultimap queryParts = request.getQueryParts();
-        return queryMatcher.stream().anyMatch(qm -> qm.matches(queryParts.getMultimap()))
-                ? request
-                : null;
+        return queryMatcher.stream().anyMatch(qm -> qm.matches(queryParts.getMultimap()));
+    }
+
+    @Override
+    public String toString() {
+        return "Query{" + queryMatcher + "}";
     }
 
 }

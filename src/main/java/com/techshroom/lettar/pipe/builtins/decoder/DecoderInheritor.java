@@ -25,28 +25,19 @@
 package com.techshroom.lettar.pipe.builtins.decoder;
 
 import com.google.auto.service.AutoService;
-import com.google.common.base.Throwables;
 import com.techshroom.lettar.annotation.BodyDecoder;
 import com.techshroom.lettar.body.Decoder;
 import com.techshroom.lettar.inheiritor.Inheritor;
 import com.techshroom.lettar.inheiritor.ReplacingInheritor;
 import com.techshroom.lettar.pipe.Pipe;
+import com.techshroom.lettar.reflect.Constructors;
 
 @AutoService(Inheritor.class)
 public class DecoderInheritor extends ReplacingInheritor<Class<? extends Decoder<?, ?>>, BodyDecoder> {
 
     @Override
     public Pipe createPipe(Class<? extends Decoder<?, ?>> data) {
-        Decoder<?, ?> dec;
-        try {
-            dec = data.newInstance();
-        } catch (InstantiationException e) {
-            Throwable t = e.getCause();
-            Throwables.throwIfUnchecked(t);
-            throw new RuntimeException(t);
-        } catch (IllegalAccessException e) {
-            throw new IllegalStateException("access denied to " + data.getName() + " constructor", e);
-        }
+        Decoder<?, ?> dec = Constructors.instatiate(data);
         return new DecoderPipe<>(dec);
     }
 

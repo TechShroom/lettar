@@ -26,11 +26,17 @@ package com.techshroom.lettar.pipe;
 
 public interface FilteringPipe extends InputPipe {
 
+    /**
+     * Determine if this request should continue or not.
+     * 
+     * @param request - the request
+     * @return {@code true} if the request should continue down this pipe
+     */
     boolean filter(FlowingRequest request);
 
     @Override
     default FlowingRequest pipeIn(FlowingRequest request) {
-        if (filter(request)) {
+        if (!filter(request)) {
             return null;
         }
         return request;
