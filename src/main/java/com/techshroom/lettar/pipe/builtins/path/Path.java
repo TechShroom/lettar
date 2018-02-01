@@ -50,7 +50,7 @@ import com.techshroom.lettar.pipe.PipeCompatible;
  * {@code /foo/something/else}</li>
  * <li>{@code /foo/re:.+?} - regular expressions must be prefixed with
  * {@code re:}</li>
- * <li>{@code /foo/{*} - captures the content of the wildcard, captures can be
+ * <li>{@code /foo/{*}} - captures the content of the wildcard, captures can be
  * used for any type of part</li>
  * </ul>
  * </p>

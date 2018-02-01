@@ -26,11 +26,12 @@ package com.techshroom.lettar;
 
 // TODO maybe name this better?
 public interface RouterInitializer {
-    
+
     /**
-     * initialize a router using the controller object's annotated methods
+     * Initialize a router using the controller object's annotated methods
+     * 
      * @param controllers
-     * @return
+     * @return the new router
      */
     <IB, OB> Router<IB, OB> newRouter(Iterable<?> controllers);
 

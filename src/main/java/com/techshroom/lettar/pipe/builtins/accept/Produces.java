@@ -33,14 +33,13 @@ import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-import com.techshroom.lettar.annotation.Route;
 import com.techshroom.lettar.pipe.PipeCompatible;
 
 /**
- * The MIME types that a {@link Route} may produce. These will be properly
- * matched against the {@code Accept} header, and the proper
- * {@code Content-type} will be automatically added if absent. This may also be
- * added to a class to indicate the content of all routes inside.
+ * The MIME types that a route may produce. These will be properly matched
+ * against the {@code Accept} header, and the proper {@code Content-type} will
+ * be automatically added if absent. This may also be added to a class to
+ * indicate the content of all routes inside.
  */
 @Documented
 @Retention(RUNTIME)
