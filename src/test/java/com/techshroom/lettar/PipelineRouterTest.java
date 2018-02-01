@@ -73,7 +73,8 @@ public class PipelineRouterTest {
 
     @Test
     public void test404Routes() throws Exception {
-        SimpleResponse<String> notFound = SimpleResponse.of(404, "404 Page");
+        SimpleResponse<String> notFound = SimpleResponse.of(404, "404 Page")
+                .addHeader("content-type", "application/octet-stream");
 
         assertEquals(notFound, router.route(request("/nonexist")));
         assertEquals(notFound, router.route(request("//list")));
