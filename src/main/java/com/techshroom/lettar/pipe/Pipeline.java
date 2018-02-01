@@ -22,15 +22,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.techshroom.lettar;
+package com.techshroom.lettar.pipe;
 
-import com.techshroom.lettar.routing.Request;
+import javax.annotation.Nullable;
 
-/**
- * Routes a request, and returns a response.
- */
-public interface Router<IB, OB> {
+import com.google.common.collect.ImmutableList;
 
-    Response<OB> route(Request<IB> request);
+public interface Pipeline {
+
+    ImmutableList<InputPipe> getInputPipes();
+
+    Handler getHandler();
+
+    ImmutableList<OutputPipe> getOutputPipes();
+
+    @Nullable
+    FlowingResponse handle(FlowingRequest request);
 
 }

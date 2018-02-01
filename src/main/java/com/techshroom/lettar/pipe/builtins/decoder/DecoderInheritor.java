@@ -22,15 +22,37 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.techshroom.lettar;
+package com.techshroom.lettar.pipe.builtins.decoder;
 
-import com.techshroom.lettar.routing.Request;
+import com.google.auto.service.AutoService;
+import com.google.common.base.Throwables;
+import com.techshroom.lettar.annotation.BodyDecoder;
+import com.techshroom.lettar.body.Decoder;
+import com.techshroom.lettar.inheiritor.Inheritor;
+import com.techshroom.lettar.inheiritor.ReplacingInheritor;
+import com.techshroom.lettar.pipe.Pipe;
 
-/**
- * Routes a request, and returns a response.
- */
-public interface Router<IB, OB> {
+@AutoService(Inheritor.class)
+public class DecoderInheritor extends ReplacingInheritor<Class<? extends Decoder<?, ?>>, BodyDecoder> {
 
-    Response<OB> route(Request<IB> request);
+    @Override
+    public Pipe createPipe(Class<? extends Decoder<?, ?>> data) {
+        Decoder<?, ?> dec;
+        try {
+            dec = data.newInstance();
+        } catch (InstantiationException e) {
+            Throwable t = e.getCause();
+            Throwables.throwIfUnchecked(t);
+            throw new RuntimeException(t);
+        } catch (IllegalAccessException e) {
+            throw new IllegalStateException("access denied to " + data.getName() + " constructor", e);
+        }
+        return new DecoderPipe<>(dec);
+    }
+
+    @Override
+    protected Class<? extends Decoder<?, ?>> interpretAnnotation(BodyDecoder annotation) {
+        return annotation.value();
+    }
 
 }

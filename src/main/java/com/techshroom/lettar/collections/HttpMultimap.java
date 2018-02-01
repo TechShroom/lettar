@@ -31,6 +31,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Multimaps;
 import com.techshroom.lettar.HttpUtil;
 
 @AutoValue
@@ -69,6 +70,28 @@ public abstract class HttpMultimap {
 
     public String getSingleValueOrDefault(String key, String defaultValue) {
         return Iterables.getFirst(getMultimap().get(key), defaultValue);
+    }
+
+    public HttpMultimap add(String key, String value) {
+        return copyOfPreSorted(HttpUtil.headerMapBuilder()
+                .putAll(getMultimap())
+                .put(key, value)
+                .build());
+    }
+
+    public HttpMultimap set(String key, String value) {
+        return copyOfPreSorted(HttpUtil.headerMapBuilder()
+                .putAll(Multimaps.filterKeys(getMultimap(), k -> !k.equalsIgnoreCase(key)))
+                .put(key, value)
+                .build());
+    }
+
+    public HttpMultimap setIfAbsent(String key, String value) {
+        if (getMultimap().containsKey(key)) {
+            return this;
+        }
+        // add is more efficient in this case
+        return add(key, value);
     }
 
 }

@@ -22,15 +22,35 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.techshroom.lettar;
+package com.techshroom.lettar.pipe.builtins.accept;
 
-import com.techshroom.lettar.routing.Request;
+import com.google.auto.service.AutoService;
+import com.google.common.collect.ImmutableList;
+import com.techshroom.lettar.inheiritor.CombiningInheritor;
+import com.techshroom.lettar.inheiritor.Inheritor;
+import com.techshroom.lettar.inheiritor.Required;
+import com.techshroom.lettar.mime.MimeType;
+import com.techshroom.lettar.pipe.Pipe;
+import com.techshroom.lettar.routing.AcceptPredicate;
 
-/**
- * Routes a request, and returns a response.
- */
-public interface Router<IB, OB> {
+@AutoService(Inheritor.class)
+@Required
+public class ProducesInheritor extends CombiningInheritor<MimeType, Produces> {
 
-    Response<OB> route(Request<IB> request);
+    private static final ImmutableList<MimeType> OCTET_STREAM = ImmutableList.of(
+            MimeType.of("application", "octet-stream"));
+
+    @Override
+    protected MimeType interpretAnnotation(Produces annotation) {
+        return MimeType.parse(annotation.value());
+    }
+
+    @Override
+    public Pipe createPipe(ImmutableList<MimeType> data) {
+        if (data.isEmpty()) {
+            data = OCTET_STREAM;
+        }
+        return AcceptPipe.create(AcceptPredicate.of(data));
+    }
 
 }

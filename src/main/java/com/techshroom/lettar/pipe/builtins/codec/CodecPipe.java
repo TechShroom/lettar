@@ -22,15 +22,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.techshroom.lettar;
+package com.techshroom.lettar.pipe.builtins.codec;
 
-import com.techshroom.lettar.routing.Request;
+import com.techshroom.lettar.pipe.BiPipe;
+import com.techshroom.lettar.pipe.FlowingRequest;
+import com.techshroom.lettar.pipe.FlowingResponse;
+import com.techshroom.lettar.pipe.builtins.decoder.DecoderPipe;
+import com.techshroom.lettar.pipe.builtins.encoder.EncoderPipe;
 
-/**
- * Routes a request, and returns a response.
- */
-public interface Router<IB, OB> {
+public class CodecPipe<DI, DO, EI, EO> implements BiPipe {
 
-    Response<OB> route(Request<IB> request);
+    private final DecoderPipe<DI, DO> decoder;
+    private final EncoderPipe<EI, EO> encoder;
+
+    public CodecPipe(DecoderPipe<DI, DO> decoder, EncoderPipe<EI, EO> encoder) {
+        this.decoder = decoder;
+        this.encoder = encoder;
+    }
+
+    @Override
+    public FlowingRequest pipeIn(FlowingRequest request) {
+        return decoder.pipeIn(request);
+    }
+
+    @Override
+    public FlowingResponse pipeOut(FlowingResponse response) {
+        return encoder.pipeOut(response);
+    }
 
 }

@@ -22,15 +22,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.techshroom.lettar;
+package com.techshroom.lettar.pipe.builtins.encoder;
 
-import com.techshroom.lettar.routing.Request;
+import com.techshroom.lettar.body.Encoder;
+import com.techshroom.lettar.pipe.FlowingResponse;
+import com.techshroom.lettar.pipe.OutputPipe;
+import com.techshroom.lettar.pipe.ResponseKeys;
 
-/**
- * Routes a request, and returns a response.
- */
-public interface Router<IB, OB> {
+public class EncoderPipe<I, O> implements OutputPipe {
 
-    Response<OB> route(Request<IB> request);
+    private final Encoder<I, O> encoder;
+
+    public EncoderPipe(Encoder<I, O> encoder) {
+        this.encoder = encoder;
+    }
+
+    @Override
+    public FlowingResponse pipeOut(FlowingResponse response) {
+        I input = response.getBody();
+        O output = encoder.encode(input);
+        return response.with(ResponseKeys.body(), output);
+    }
 
 }

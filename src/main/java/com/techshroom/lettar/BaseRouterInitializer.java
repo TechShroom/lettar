@@ -24,13 +24,21 @@
  */
 package com.techshroom.lettar;
 
-import com.techshroom.lettar.routing.Request;
+public abstract class BaseRouterInitializer<CARRIER> implements RouterInitializer {
 
-/**
- * Routes a request, and returns a response.
- */
-public interface Router<IB, OB> {
+    @Override
+    public final <IB, OB> Router<IB, OB> newRouter(Iterable<?> controllers) {
+        CARRIER carrier = newCarrier();
+        for (Object controller : controllers) {
+            addController(carrier, controller);
+        }
+        return newRouter(carrier);
+    }
 
-    Response<OB> route(Request<IB> request);
+    protected abstract <IB, OB> Router<IB, OB> newRouter(CARRIER carrier);
+
+    protected abstract CARRIER newCarrier();
+
+    protected abstract void addController(CARRIER carrier, Object controller);
 
 }

@@ -22,15 +22,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.techshroom.lettar;
+package com.techshroom.lettar.inheiritor;
 
-import com.techshroom.lettar.routing.Request;
+public interface InheritorMap extends Iterable<InheritorMap.Entry> {
 
-/**
- * Routes a request, and returns a response.
- */
-public interface Router<IB, OB> {
+    interface Entry {
 
-    Response<OB> route(Request<IB> request);
+        Inheritor<Object, ?> getInheritor();
+
+        Object getOpaqueObject();
+
+    }
+
+    int getSize();
+
+    <O> O get(Inheritor<O, ?> key);
+
+    <O> void put(Inheritor<O, ?> key, O opaque);
 
 }

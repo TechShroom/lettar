@@ -24,17 +24,8 @@
  */
 package com.techshroom.lettar.body;
 
-import java.util.Optional;
-
 public interface Decoder<I, O> {
 
     O decode(I input);
-
-    /**
-     * Supplies the default {@code Accept} header to use for the attached route.
-     */
-    default Optional<String> defaultAccept() {
-        return Optional.empty();
-    }
 
 }

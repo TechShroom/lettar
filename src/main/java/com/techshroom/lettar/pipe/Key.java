@@ -22,15 +22,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.techshroom.lettar;
+package com.techshroom.lettar.pipe;
 
-import com.techshroom.lettar.routing.Request;
+public interface Key<T> {
 
-/**
- * Routes a request, and returns a response.
- */
-public interface Router<IB, OB> {
+    public static <T> Key<T> of(String id) {
+        class KeyImpl implements Key<T> {
 
-    Response<OB> route(Request<IB> request);
+            @Override
+            public String getId() {
+                return id;
+            }
+
+            @Override
+            public String toString() {
+                return id;
+            }
+
+        }
+        return new KeyImpl();
+    }
+
+    String getId();
+    
+    default <U> Key<U> child(String next) {
+        return of(getId() + "." + next);
+    }
 
 }

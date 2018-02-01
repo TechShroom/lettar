@@ -22,15 +22,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.techshroom.lettar;
+package com.techshroom.lettar.pipe;
 
-import com.techshroom.lettar.routing.Request;
+public interface OutputPipe extends Pipe {
 
-/**
- * Routes a request, and returns a response.
- */
-public interface Router<IB, OB> {
-
-    Response<OB> route(Request<IB> request);
+    /**
+     * Pipe a response through.
+     * 
+     * @param response
+     *            - the incoming response
+     * @return the response to continue piping
+     */
+    FlowingResponse pipeOut(FlowingResponse response);
 
 }

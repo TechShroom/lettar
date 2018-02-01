@@ -22,15 +22,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.techshroom.lettar;
+package com.techshroom.lettar.pipe;
 
+import java.util.Optional;
+import java.util.function.Function;
+
+import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableMap;
 import com.techshroom.lettar.routing.Request;
 
-/**
- * Routes a request, and returns a response.
- */
-public interface Router<IB, OB> {
+class BaseFlowingRequest extends BaseFlowingElement<FlowingRequest> implements FlowingRequest {
 
-    Response<OB> route(Request<IB> request);
+    private static final Splitter PATH_SPLITTER = Splitter.on('/').omitEmptyStrings();
+
+    public static FlowingRequest wrap(Request<?> request) {
+        return new BFEBuilder<>(ImmutableMap.of(), BaseFlowingRequest::new)
+                .put(RequestKeys.method, request.getMethod())
+                .put(RequestKeys.path, PATH_SPLITTER.splitToList(request.getPath()))
+                .put(RequestKeys.queryParts, request.getQueryParts())
+                .put(RequestKeys.headers, request.getHeaders())
+                .put(RequestKeys.body(), request.getBody())
+                .build();
+    }
+
+    public BaseFlowingRequest(ImmutableMap<String, Optional<Object>> map) {
+        super(map);
+    }
+
+    @Override
+    protected Function<ImmutableMap<String, Optional<Object>>, FlowingRequest> constructFunction() {
+        return BaseFlowingRequest::new;
+    }
 
 }

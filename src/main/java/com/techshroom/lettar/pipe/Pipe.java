@@ -22,15 +22,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.techshroom.lettar;
-
-import com.techshroom.lettar.routing.Request;
+package com.techshroom.lettar.pipe;
 
 /**
- * Routes a request, and returns a response.
+ * Superinterface of all pipes.
  */
-public interface Router<IB, OB> {
-
-    Response<OB> route(Request<IB> request);
+public interface Pipe {
 
 }

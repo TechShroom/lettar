@@ -24,13 +24,24 @@
  */
 package com.techshroom.lettar;
 
-import com.techshroom.lettar.routing.Request;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.TYPE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-/**
- * Routes a request, and returns a response.
- */
-public interface Router<IB, OB> {
+import java.lang.annotation.Documented;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 
-    Response<OB> route(Request<IB> request);
+import com.techshroom.lettar.annotation.BodyCodec;
+import com.techshroom.lettar.pipe.PipeCompatible;
+import com.techshroom.lettar.pipe.builtins.accept.Produces;
+
+@Documented
+@Retention(RUNTIME)
+@Target({ TYPE, METHOD })
+@PipeCompatible(metaAnnotation = true)
+@BodyCodec(TestCodec.class) 
+@Produces("application/json")
+public @interface TestBodyCodec {
 
 }

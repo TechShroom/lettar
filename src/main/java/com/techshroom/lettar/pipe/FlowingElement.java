@@ -22,15 +22,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.techshroom.lettar;
+package com.techshroom.lettar.pipe;
 
-import com.techshroom.lettar.routing.Request;
+import java.util.function.UnaryOperator;
 
-/**
- * Routes a request, and returns a response.
- */
-public interface Router<IB, OB> {
+public interface FlowingElement<SELF extends FlowingElement<SELF>> {
 
-    Response<OB> route(Request<IB> request);
+    interface Builder<SELF extends FlowingElement<SELF>> {
+
+        <V> Builder<SELF> put(Key<V> key, V value);
+
+        SELF build();
+
+    }
+
+    <V> V get(Key<V> key);
+
+    Builder<SELF> toBuilder();
+
+    default <V> SELF with(Key<V> key, V value) {
+        return toBuilder().put(key, value).build();
+    }
+
+    default <V> SELF modify(Key<V> key, UnaryOperator<V> value) {
+        return toBuilder().put(key, value.apply(get(key))).build();
+    }
 
 }

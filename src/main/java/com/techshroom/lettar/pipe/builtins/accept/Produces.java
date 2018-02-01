@@ -22,15 +22,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.techshroom.lettar;
+package com.techshroom.lettar.pipe.builtins.accept;
 
-import com.techshroom.lettar.routing.Request;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.TYPE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
+import java.lang.annotation.Documented;
+import java.lang.annotation.Repeatable;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+
+import com.techshroom.lettar.annotation.Route;
+import com.techshroom.lettar.pipe.PipeCompatible;
 
 /**
- * Routes a request, and returns a response.
+ * The MIME types that a {@link Route} may produce. These will be properly
+ * matched against the {@code Accept} header, and the proper
+ * {@code Content-type} will be automatically added if absent. This may also be
+ * added to a class to indicate the content of all routes inside.
  */
-public interface Router<IB, OB> {
+@Documented
+@Retention(RUNTIME)
+@Target({ TYPE, METHOD })
+@PipeCompatible
+@Repeatable(ProducesMultiple.class)
+public @interface Produces {
 
-    Response<OB> route(Request<IB> request);
+    String value();
 
 }

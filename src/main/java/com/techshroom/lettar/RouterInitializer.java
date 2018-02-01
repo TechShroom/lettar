@@ -24,13 +24,14 @@
  */
 package com.techshroom.lettar;
 
-import com.techshroom.lettar.routing.Request;
-
-/**
- * Routes a request, and returns a response.
- */
-public interface Router<IB, OB> {
-
-    Response<OB> route(Request<IB> request);
+// TODO maybe name this better?
+public interface RouterInitializer {
+    
+    /**
+     * initialize a router using the controller object's annotated methods
+     * @param controllers
+     * @return
+     */
+    <IB, OB> Router<IB, OB> newRouter(Iterable<?> controllers);
 
 }

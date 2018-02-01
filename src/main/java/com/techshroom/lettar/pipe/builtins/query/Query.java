@@ -22,15 +22,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.techshroom.lettar;
+package com.techshroom.lettar.pipe.builtins.query;
 
-import com.techshroom.lettar.routing.Request;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.TYPE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
+import java.lang.annotation.Documented;
+import java.lang.annotation.Repeatable;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+
+import com.techshroom.lettar.pipe.PipeCompatible;
 
 /**
- * Routes a request, and returns a response.
+ * The query parameters to match. Each value should be of the format
+ * {@code key=value}.
+ * 
+ * This uses AND semantics, meaning that every value must match. If OR semantics
+ * are desired, use multiple annotations.
  */
-public interface Router<IB, OB> {
+@Documented
+@Retention(RUNTIME)
+@Target({ TYPE, METHOD })
+@PipeCompatible
+@Repeatable(QueryMultiple.class)
+public @interface Query {
 
-    Response<OB> route(Request<IB> request);
+    String[] value();
 
 }

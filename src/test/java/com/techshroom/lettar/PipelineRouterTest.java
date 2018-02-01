@@ -34,31 +34,22 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Multimap;
 import com.techshroom.lettar.collections.HttpMultimap;
+import com.techshroom.lettar.pipe.PipelineRouterInitializer;
 import com.techshroom.lettar.routing.HttpMethod;
 import com.techshroom.lettar.routing.Request;
 
-public class SimpleRouterTest {
+public class PipelineRouterTest {
 
-    private SimpleRouter<String, String> router;
+    private Router<String, String> router;
 
     @Before
     public void setup() {
-        router = SimpleRouter.create();
-    }
-
-    private void registerRoutes() {
-        router.registerRoutes(ImmutableList.of(new TestRoutes()));
-    }
-
-    @Test
-    public void testRegisterRoutes() throws Exception {
-        registerRoutes();
+        router = new PipelineRouterInitializer()
+                .newRouter(ImmutableList.of(new TestRoutes()));
     }
 
     @Test
     public void testPathRoutes() throws Exception {
-        registerRoutes();
-
         assertEqualsIgnContentType(SimpleResponse.of(200, "Index Page"), router.route(request("/")));
         assertEqualsIgnContentType(SimpleResponse.of(200, "Index Page"), router.route(request("//")));
         assertEqualsIgnContentType(SimpleResponse.of(200, "[a,b,c,res1]"), router.route(request("/res1/list")));
@@ -70,8 +61,6 @@ public class SimpleRouterTest {
 
     @Test
     public void testQueryRoutes() throws Exception {
-        registerRoutes();
-
         assertEqualsIgnContentType(SimpleResponse.of(200, "Queried 'index' Page"), router.route(request("/query",
                 HttpMultimap.copyOf(ImmutableMap.of("page", "index")))));
         assertEqualsIgnContentType(SimpleResponse.of(200, "Queried 'action' Page"), router.route(request("/query",
@@ -80,15 +69,11 @@ public class SimpleRouterTest {
 
     @Test
     public void testErrorRoutes() throws Exception {
-        registerRoutes();
-
-        assertEqualsIgnContentType(SimpleResponse.of(500, "Error encountered: Error Here"), router.route(request("/error")));
+        assertEqualsIgnContentType(SimpleResponse.of(500, "Error Here"), router.route(request("/error")));
     }
 
     @Test
     public void test404Routes() throws Exception {
-        registerRoutes();
-
         SimpleResponse<String> notFound = SimpleResponse.of(404, "404 Page");
 
         assertEquals(notFound, router.route(request("/nonexist")));

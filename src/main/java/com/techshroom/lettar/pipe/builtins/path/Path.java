@@ -22,15 +22,46 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.techshroom.lettar;
+package com.techshroom.lettar.pipe.builtins.path;
 
-import com.techshroom.lettar.routing.Request;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.TYPE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
+import java.lang.annotation.Documented;
+import java.lang.annotation.Repeatable;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+
+import com.techshroom.lettar.pipe.PipeCompatible;
 
 /**
- * Routes a request, and returns a response.
+ * The path to match. The format allows for wildcards (*, **) and regular
+ * expressions in the path components.
+ * 
+ * <p>
+ * Examples:
+ * <ul>
+ * <li>{@code /foo/bar}</li>
+ * <li>{@code /foo/*} - matches {@code /foo/something}, but not
+ * {@code /foo/something/else}</li>
+ * <li>{@code /foo/**} - matches both of the above</li>
+ * <li>{@code /foo/*}{@code /else} - matches just
+ * {@code /foo/something/else}</li>
+ * <li>{@code /foo/re:.+?} - regular expressions must be prefixed with
+ * {@code re:}</li>
+ * <li>{@code /foo/{*} - captures the content of the wildcard, captures can be
+ * used for any type of part</li>
+ * </ul>
+ * </p>
  */
-public interface Router<IB, OB> {
+@Documented
+@Retention(RUNTIME)
+@Target({ TYPE, METHOD })
+@PipeCompatible
+@Repeatable(PathMultiple.class)
+public @interface Path {
 
-    Response<OB> route(Request<IB> request);
+    String value();
 
 }

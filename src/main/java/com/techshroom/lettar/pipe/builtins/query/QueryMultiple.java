@@ -22,15 +22,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.techshroom.lettar;
+package com.techshroom.lettar.pipe.builtins.query;
 
-import com.techshroom.lettar.routing.Request;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.TYPE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-/**
- * Routes a request, and returns a response.
- */
-public interface Router<IB, OB> {
+import java.lang.annotation.Documented;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 
-    Response<OB> route(Request<IB> request);
+@Documented
+@Retention(RUNTIME)
+@Target({ TYPE, METHOD })
+@interface QueryMultiple {
+
+    Query[] value();
 
 }

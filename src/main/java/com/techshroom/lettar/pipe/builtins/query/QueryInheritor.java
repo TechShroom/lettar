@@ -22,15 +22,35 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.techshroom.lettar;
+package com.techshroom.lettar.pipe.builtins.query;
 
-import com.techshroom.lettar.routing.Request;
+import static com.google.common.collect.ImmutableListMultimap.toImmutableListMultimap;
 
-/**
- * Routes a request, and returns a response.
- */
-public interface Router<IB, OB> {
+import java.util.stream.Stream;
 
-    Response<OB> route(Request<IB> request);
+import com.google.auto.service.AutoService;
+import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableList;
+import com.techshroom.lettar.inheiritor.CombiningInheritor;
+import com.techshroom.lettar.inheiritor.Inheritor;
+import com.techshroom.lettar.pipe.Pipe;
+import com.techshroom.lettar.routing.KeyValuePredicate;
+
+@AutoService(Inheritor.class)
+public class QueryInheritor extends CombiningInheritor<KeyValuePredicate, Query> {
+
+    private static final Splitter QUERY_SPLITTER = Splitter.on('=').limit(2);
+
+    @Override
+    protected KeyValuePredicate interpretAnnotation(Query annotation) {
+        return KeyValuePredicate.of(Stream.of(annotation.value())
+                .map(QUERY_SPLITTER::splitToList)
+                .collect(toImmutableListMultimap(s -> s.get(0), s -> s.get(1))));
+    }
+
+    @Override
+    public Pipe createPipe(ImmutableList<KeyValuePredicate> data) {
+        return QueryPipe.create(data);
+    }
 
 }

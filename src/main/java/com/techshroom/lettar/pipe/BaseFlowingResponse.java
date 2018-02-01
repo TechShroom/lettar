@@ -22,15 +22,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.techshroom.lettar;
+package com.techshroom.lettar.pipe;
 
-import com.techshroom.lettar.routing.Request;
+import java.util.Optional;
+import java.util.function.Function;
 
-/**
- * Routes a request, and returns a response.
- */
-public interface Router<IB, OB> {
+import com.google.common.collect.ImmutableMap;
+import com.techshroom.lettar.collections.HttpMultimap;
 
-    Response<OB> route(Request<IB> request);
+class BaseFlowingResponse extends BaseFlowingElement<FlowingResponse> implements FlowingResponse {
+
+    public static FlowingResponse from(int status, Object body, HttpMultimap headers) {
+        return new BFEBuilder<>(ImmutableMap.of(), BaseFlowingResponse::new)
+                .put(ResponseKeys.statusCode, status)
+                .put(ResponseKeys.body(), body)
+                .put(ResponseKeys.headers, headers)
+                .build();
+    }
+
+    public BaseFlowingResponse(ImmutableMap<String, Optional<Object>> map) {
+        super(map);
+    }
+
+    @Override
+    protected Function<ImmutableMap<String, Optional<Object>>, FlowingResponse> constructFunction() {
+        return BaseFlowingResponse::new;
+    }
 
 }

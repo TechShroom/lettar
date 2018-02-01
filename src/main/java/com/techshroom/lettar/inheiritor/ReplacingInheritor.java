@@ -22,15 +22,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.techshroom.lettar;
+package com.techshroom.lettar.inheiritor;
 
-import com.techshroom.lettar.routing.Request;
+import java.lang.annotation.Annotation;
 
-/**
- * Routes a request, and returns a response.
- */
-public interface Router<IB, OB> {
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 
-    Response<OB> route(Request<IB> request);
+public abstract class ReplacingInheritor<O, A extends Annotation> implements Inheritor<O, A> {
+
+    @Override
+    public O getDefault() {
+        return null;
+    }
+
+    @Override
+    public O interpretAnnotations(ImmutableList<A> annotations) {
+        return interpretAnnotation(Iterables.getLast(annotations));
+    }
+
+    protected abstract O interpretAnnotation(A annotation);
+
+    @Override
+    public O inherit(O parent, O child) {
+        return child;
+    }
 
 }

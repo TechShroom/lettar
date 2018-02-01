@@ -22,15 +22,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.techshroom.lettar;
+package com.techshroom.lettar.inheiritor;
 
-import com.techshroom.lettar.routing.Request;
+import java.lang.annotation.Annotation;
 
-/**
- * Routes a request, and returns a response.
- */
-public interface Router<IB, OB> {
+import com.google.auto.value.AutoValue;
 
-    Response<OB> route(Request<IB> request);
+@AutoValue
+abstract class InheritorMapEntry implements InheritorMap.Entry {
+
+    static <O> InheritorMapEntry create(Inheritor<? extends O, ?> inheritor, O opaque) {
+        @SuppressWarnings("unchecked")
+        Inheritor<Object, Annotation> inhCast = (Inheritor<Object, Annotation>) inheritor;
+        return new AutoValue_InheritorMapEntry(inhCast, opaque);
+    }
+
+    InheritorMapEntry() {
+    }
 
 }

@@ -22,15 +22,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.techshroom.lettar;
+package com.techshroom.lettar.pipe;
 
-import com.techshroom.lettar.routing.Request;
+import javax.annotation.Nullable;
 
-/**
- * Routes a request, and returns a response.
- */
-public interface Router<IB, OB> {
+public interface InputPipe extends Pipe {
 
-    Response<OB> route(Request<IB> request);
+    /**
+     * Pipe a request through, or overflow and return {@code null}.
+     * 
+     * @param request
+     *            - the incoming request
+     * @return the request to continue piping, or {@code null} to invoke
+     *         overflow
+     */
+    @Nullable
+    FlowingRequest pipeIn(FlowingRequest request);
 
 }

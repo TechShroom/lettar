@@ -22,15 +22,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.techshroom.lettar;
+package com.techshroom.lettar.inheiritor;
 
-import com.techshroom.lettar.routing.Request;
+import static java.lang.annotation.ElementType.TYPE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
+import java.lang.annotation.Documented;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 
 /**
- * Routes a request, and returns a response.
+ * Documents an {@link Inheritor} as being <em>required</em>.
  */
-public interface Router<IB, OB> {
-
-    Response<OB> route(Request<IB> request);
+@Documented
+@Retention(RUNTIME)
+@Target({ TYPE })
+public @interface Required {
 
 }

@@ -59,7 +59,7 @@ public abstract class SimpleRequest<B> implements Request<B> {
 
         Builder<B> headers(HttpMultimap headers);
 
-        Builder<B> queryParts(HttpMultimap headers);
+        Builder<B> queryParts(HttpMultimap queryParts);
 
         Builder<B> body(@Nullable B body);
 

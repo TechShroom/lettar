@@ -22,15 +22,34 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.techshroom.lettar;
+package com.techshroom.lettar.pipe;
 
-import com.techshroom.lettar.routing.Request;
+import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
+import java.lang.annotation.Documented;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+
+import com.techshroom.lettar.inheiritor.Inheritor;
 
 /**
- * Routes a request, and returns a response.
+ * Indicates that the annotation is intended to be bound to a {@link Pipe}. If,
+ * at runtime, annotations are discovered that are "pipe compatible" but do not
+ * have registered {@link Inheritor inheritors}, an exception will be thrown.
  */
-public interface Router<IB, OB> {
+@Documented
+@Retention(RUNTIME)
+@Target(ANNOTATION_TYPE)
+public @interface PipeCompatible {
 
-    Response<OB> route(Request<IB> request);
+    /**
+     * Set this to {@code true} if this annotation is not directly consumed, but
+     * should instead be checked for {@link PipeCompatible} annotations on
+     * itself.
+     * 
+     * @return if this is a meta-PipeCompatible annotation
+     */
+    boolean metaAnnotation() default false;
 
 }

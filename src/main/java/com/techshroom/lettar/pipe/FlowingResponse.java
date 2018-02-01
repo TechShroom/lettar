@@ -22,15 +22,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.techshroom.lettar;
+package com.techshroom.lettar.pipe;
 
-import com.techshroom.lettar.routing.Request;
+import com.techshroom.lettar.collections.HttpMultimap;
 
-/**
- * Routes a request, and returns a response.
- */
-public interface Router<IB, OB> {
+public interface FlowingResponse extends FlowingElement<FlowingResponse> {
+    
+    default FlowingRequest getRequest() {
+        return get(ResponseKeys.request);
+    }
 
-    Response<OB> route(Request<IB> request);
+    default int getStatusCode() {
+        return get(ResponseKeys.statusCode);
+    }
+
+    default HttpMultimap getHeaders() {
+        return get(ResponseKeys.headers);
+    }
+
+    default <B> B getBody() {
+        return get(ResponseKeys.body());
+    }
 
 }

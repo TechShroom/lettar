@@ -22,15 +22,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.techshroom.lettar;
+package com.techshroom.lettar.pipe.builtins.path;
 
-import com.techshroom.lettar.routing.Request;
+import com.google.auto.service.AutoService;
+import com.google.common.collect.ImmutableList;
+import com.techshroom.lettar.inheiritor.CombiningInheritor;
+import com.techshroom.lettar.inheiritor.Inheritor;
+import com.techshroom.lettar.pipe.Pipe;
+import com.techshroom.lettar.routing.PathRoutePredicate;
 
-/**
- * Routes a request, and returns a response.
- */
-public interface Router<IB, OB> {
+@AutoService(Inheritor.class)
+public class PathInheritor extends CombiningInheritor<PathRoutePredicate, Path> {
 
-    Response<OB> route(Request<IB> request);
+    @Override
+    protected PathRoutePredicate interpretAnnotation(Path annotation) {
+        return PathRoutePredicate.parse(annotation.value());
+    }
 
+    @Override
+    public Pipe createPipe(ImmutableList<PathRoutePredicate> data) {
+        return PathPipe.create(data);
+    }
 }

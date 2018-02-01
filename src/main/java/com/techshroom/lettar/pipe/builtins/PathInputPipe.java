@@ -22,15 +22,39 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.techshroom.lettar;
+package com.techshroom.lettar.pipe.builtins;
 
-import com.techshroom.lettar.routing.Request;
+import java.util.List;
 
-/**
- * Routes a request, and returns a response.
- */
-public interface Router<IB, OB> {
+import com.google.common.collect.ImmutableList;
+import com.techshroom.lettar.pipe.FlowingRequest;
+import com.techshroom.lettar.pipe.InputPipe;
+import com.techshroom.lettar.pipe.Key;
+import com.techshroom.lettar.pipe.RequestKeys;
+import com.techshroom.lettar.routing.PathRoutePredicate;
+import com.techshroom.lettar.routing.PathRoutePredicate.MatchResult;
 
-    Response<OB> route(Request<IB> request);
+public class PathInputPipe implements InputPipe {
 
+    public static final Key<ImmutableList<String>> parts = RequestKeys.path.child("parts");
+
+    public static PathInputPipe create(PathRoutePredicate pathMatcher) {
+        return new PathInputPipe(pathMatcher);
+    }
+
+    private final PathRoutePredicate pathMatcher;
+
+    private PathInputPipe(PathRoutePredicate pathMatcher) {
+        this.pathMatcher = pathMatcher;
+    }
+
+    @Override
+    public FlowingRequest pipeIn(FlowingRequest request) {
+        List<String> path = request.getPath();
+        MatchResult match = pathMatcher.matches(path);
+        if (!match.isSuccessfulMatch()) {
+            return null;
+        }
+        return request.with(parts, match.getParts());
+    }
 }

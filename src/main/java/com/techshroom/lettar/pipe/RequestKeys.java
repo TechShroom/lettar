@@ -22,15 +22,29 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.techshroom.lettar;
+package com.techshroom.lettar.pipe;
 
-import com.techshroom.lettar.routing.Request;
+import java.util.List;
+
+import com.techshroom.lettar.collections.HttpMultimap;
+import com.techshroom.lettar.routing.HttpMethod;
 
 /**
- * Routes a request, and returns a response.
+ * Request keys for {@link FlowingElement}.
  */
-public interface Router<IB, OB> {
+public class RequestKeys {
 
-    Response<OB> route(Request<IB> request);
+    public static final Key<HttpMethod> method = Key.of("Request.method");
+    public static final Key<List<String>> path = Key.of("Request.path");
+    public static final Key<HttpMultimap> queryParts = Key.of("Request.queryParts");
+    public static final Key<HttpMultimap> headers = Key.of("Request.headers");
+
+    // enable retrieval of body under any type
+    public static final <B> Key<B> body() {
+        return Key.of("Request.body");
+    }
+
+    // during error processing:
+    public static final Key<Throwable> error = Key.of("Request.error");
 
 }

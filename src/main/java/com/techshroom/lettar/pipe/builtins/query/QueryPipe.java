@@ -22,15 +22,34 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.techshroom.lettar;
+package com.techshroom.lettar.pipe.builtins.query;
 
-import com.techshroom.lettar.routing.Request;
+import java.util.List;
 
-/**
- * Routes a request, and returns a response.
- */
-public interface Router<IB, OB> {
+import com.google.common.collect.ImmutableList;
+import com.techshroom.lettar.collections.HttpMultimap;
+import com.techshroom.lettar.pipe.FlowingRequest;
+import com.techshroom.lettar.pipe.InputPipe;
+import com.techshroom.lettar.routing.KeyValuePredicate;
 
-    Response<OB> route(Request<IB> request);
+public class QueryPipe implements InputPipe {
+
+    public static QueryPipe create(List<KeyValuePredicate> queryMatcher) {
+        return new QueryPipe(ImmutableList.copyOf(queryMatcher));
+    }
+
+    private final ImmutableList<KeyValuePredicate> queryMatcher;
+
+    private QueryPipe(ImmutableList<KeyValuePredicate> queryMatcher) {
+        this.queryMatcher = queryMatcher;
+    }
+
+    @Override
+    public FlowingRequest pipeIn(FlowingRequest request) {
+        HttpMultimap queryParts = request.getQueryParts();
+        return queryMatcher.stream().anyMatch(qm -> qm.matches(queryParts.getMultimap()))
+                ? request
+                : null;
+    }
 
 }

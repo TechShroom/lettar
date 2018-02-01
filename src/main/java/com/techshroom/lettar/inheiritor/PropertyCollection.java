@@ -22,15 +22,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.techshroom.lettar;
+package com.techshroom.lettar.inheiritor;
 
-import com.techshroom.lettar.routing.Request;
+import javax.annotation.Nullable;
+
+import com.techshroom.lettar.pipe.Key;
 
 /**
- * Routes a request, and returns a response.
+ * represents something that can be inherited between objects, and resolved
+ * through a tree of inheritance.
  */
-public interface Router<IB, OB> {
+public interface PropertyCollection {
 
-    Response<OB> route(Request<IB> request);
+    @Nullable
+    <V> V get(Key<V> key);
 
 }

@@ -22,15 +22,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.techshroom.lettar;
+package com.techshroom.lettar.pipe;
 
-import com.techshroom.lettar.routing.Request;
+public interface FilteringPipe extends InputPipe {
 
-/**
- * Routes a request, and returns a response.
- */
-public interface Router<IB, OB> {
+    boolean filter(FlowingRequest request);
 
-    Response<OB> route(Request<IB> request);
+    @Override
+    default FlowingRequest pipeIn(FlowingRequest request) {
+        if (filter(request)) {
+            return null;
+        }
+        return request;
+    }
 
 }
