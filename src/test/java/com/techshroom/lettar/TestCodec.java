@@ -24,6 +24,8 @@
  */
 package com.techshroom.lettar;
 
+import java.lang.reflect.Type;
+
 import com.techshroom.lettar.body.SimpleCodec;
 
 public class TestCodec implements SimpleCodec<String, String> {
@@ -34,7 +36,7 @@ public class TestCodec implements SimpleCodec<String, String> {
     }
 
     @Override
-    public String decode(String input) {
+    public String decode(Type bodyType, String input) {
         return input == null ? null : input.replace("Encoded: ", "");
     }
 

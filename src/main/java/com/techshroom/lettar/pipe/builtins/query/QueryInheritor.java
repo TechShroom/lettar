@@ -33,6 +33,7 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.techshroom.lettar.inheiritor.CombiningInheritor;
 import com.techshroom.lettar.inheiritor.Inheritor;
+import com.techshroom.lettar.inheiritor.InheritorContext;
 import com.techshroom.lettar.pipe.Pipe;
 import com.techshroom.lettar.routing.KeyValuePredicate;
 
@@ -49,7 +50,7 @@ public class QueryInheritor extends CombiningInheritor<KeyValuePredicate, Query>
     }
 
     @Override
-    public Pipe createPipe(ImmutableList<KeyValuePredicate> data) {
+    public Pipe createPipe(ImmutableList<KeyValuePredicate> data, InheritorContext ctx) {
         return QueryPipe.create(data);
     }
 

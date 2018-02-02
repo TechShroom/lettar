@@ -24,6 +24,8 @@
  */
 package com.techshroom.lettar.pipe.builtins.decoder;
 
+import java.lang.reflect.Type;
+
 import com.techshroom.lettar.body.Decoder;
 import com.techshroom.lettar.pipe.FlowingRequest;
 import com.techshroom.lettar.pipe.InputPipe;
@@ -32,15 +34,17 @@ import com.techshroom.lettar.pipe.RequestKeys;
 public class DecoderPipe<I, O> implements InputPipe {
 
     private final Decoder<I, O> decoder;
+    private final Type bodyType;
 
-    public DecoderPipe(Decoder<I, O> decoder) {
+    public DecoderPipe(Decoder<I, O> decoder, Type bodyType) {
         this.decoder = decoder;
+        this.bodyType = bodyType;
     }
 
     @Override
     public FlowingRequest pipeIn(FlowingRequest request) {
         I input = request.getBody();
-        O output = decoder.decode(input);
+        O output = decoder.decode(bodyType, input);
         return request.with(RequestKeys.body(), output);
     }
 

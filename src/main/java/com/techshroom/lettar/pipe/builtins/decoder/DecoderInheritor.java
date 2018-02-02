@@ -28,6 +28,7 @@ import com.google.auto.service.AutoService;
 import com.techshroom.lettar.annotation.BodyDecoder;
 import com.techshroom.lettar.body.Decoder;
 import com.techshroom.lettar.inheiritor.Inheritor;
+import com.techshroom.lettar.inheiritor.InheritorContext;
 import com.techshroom.lettar.inheiritor.ReplacingInheritor;
 import com.techshroom.lettar.pipe.Pipe;
 import com.techshroom.lettar.reflect.Constructors;
@@ -36,9 +37,9 @@ import com.techshroom.lettar.reflect.Constructors;
 public class DecoderInheritor extends ReplacingInheritor<Class<? extends Decoder<?, ?>>, BodyDecoder> {
 
     @Override
-    public Pipe createPipe(Class<? extends Decoder<?, ?>> data) {
+    public Pipe createPipe(Class<? extends Decoder<?, ?>> data, InheritorContext ctx) {
         Decoder<?, ?> dec = Constructors.instatiate(data);
-        return new DecoderPipe<>(dec);
+        return new DecoderPipe<>(dec, ctx.getBodyType());
     }
 
     @Override

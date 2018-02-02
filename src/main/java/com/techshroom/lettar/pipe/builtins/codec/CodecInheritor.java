@@ -28,6 +28,7 @@ import com.google.auto.service.AutoService;
 import com.techshroom.lettar.annotation.BodyCodec;
 import com.techshroom.lettar.body.Codec;
 import com.techshroom.lettar.inheiritor.Inheritor;
+import com.techshroom.lettar.inheiritor.InheritorContext;
 import com.techshroom.lettar.inheiritor.ReplacingInheritor;
 import com.techshroom.lettar.pipe.Pipe;
 import com.techshroom.lettar.pipe.builtins.decoder.DecoderPipe;
@@ -38,9 +39,9 @@ import com.techshroom.lettar.reflect.Constructors;
 public class CodecInheritor extends ReplacingInheritor<Class<? extends Codec<?, ?, ?, ?>>, BodyCodec> {
 
     @Override
-    public Pipe createPipe(Class<? extends Codec<?, ?, ?, ?>> data) {
+    public Pipe createPipe(Class<? extends Codec<?, ?, ?, ?>> data, InheritorContext ctx) {
         Codec<?, ?, ?, ?> codec = Constructors.instatiate(data);
-        return new CodecPipe<>(new DecoderPipe<>(codec), new EncoderPipe<>(codec));
+        return new CodecPipe<>(new DecoderPipe<>(codec, ctx.getBodyType()), new EncoderPipe<>(codec));
     }
 
     @Override

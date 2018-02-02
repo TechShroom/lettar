@@ -37,6 +37,6 @@ public interface Inheritor<O, A extends Annotation> {
 
     O inherit(O parent, O child);
 
-    Pipe createPipe(O data);
+    Pipe createPipe(O data, InheritorContext ctx);
 
 }

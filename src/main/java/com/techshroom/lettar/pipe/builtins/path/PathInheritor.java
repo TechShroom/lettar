@@ -28,6 +28,7 @@ import com.google.auto.service.AutoService;
 import com.google.common.collect.ImmutableList;
 import com.techshroom.lettar.inheiritor.CombiningInheritor;
 import com.techshroom.lettar.inheiritor.Inheritor;
+import com.techshroom.lettar.inheiritor.InheritorContext;
 import com.techshroom.lettar.pipe.Pipe;
 import com.techshroom.lettar.routing.PathRoutePredicate;
 
@@ -40,7 +41,7 @@ public class PathInheritor extends CombiningInheritor<PathRoutePredicate, Path> 
     }
 
     @Override
-    public Pipe createPipe(ImmutableList<PathRoutePredicate> data) {
+    public Pipe createPipe(ImmutableList<PathRoutePredicate> data, InheritorContext ctx) {
         return PathPipe.create(data);
     }
 }

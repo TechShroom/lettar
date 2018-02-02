@@ -24,8 +24,10 @@
  */
 package com.techshroom.lettar.body;
 
+import java.lang.reflect.Type;
+
 public interface Decoder<I, O> {
 
-    O decode(I input);
+    O decode(Type bodyType, I input);
 
 }

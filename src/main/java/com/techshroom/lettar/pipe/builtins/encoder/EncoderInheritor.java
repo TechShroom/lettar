@@ -28,6 +28,7 @@ import com.google.auto.service.AutoService;
 import com.techshroom.lettar.annotation.BodyEncoder;
 import com.techshroom.lettar.body.Encoder;
 import com.techshroom.lettar.inheiritor.Inheritor;
+import com.techshroom.lettar.inheiritor.InheritorContext;
 import com.techshroom.lettar.inheiritor.ReplacingInheritor;
 import com.techshroom.lettar.pipe.Pipe;
 import com.techshroom.lettar.reflect.Constructors;
@@ -36,7 +37,7 @@ import com.techshroom.lettar.reflect.Constructors;
 public class EncoderInheritor extends ReplacingInheritor<Class<? extends Encoder<?, ?>>, BodyEncoder> {
 
     @Override
-    public Pipe createPipe(Class<? extends Encoder<?, ?>> data) {
+    public Pipe createPipe(Class<? extends Encoder<?, ?>> data, InheritorContext ctx) {
         Encoder<?, ?> enc = Constructors.instatiate(data);
         return new EncoderPipe<>(enc);
     }

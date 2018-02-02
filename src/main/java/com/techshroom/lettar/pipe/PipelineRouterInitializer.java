@@ -45,6 +45,7 @@ import com.techshroom.lettar.SimpleRequest;
 import com.techshroom.lettar.annotation.NotFoundHandler;
 import com.techshroom.lettar.annotation.ServerErrorHandler;
 import com.techshroom.lettar.inheiritor.HashInheritorMap;
+import com.techshroom.lettar.inheiritor.InheritorContext;
 import com.techshroom.lettar.inheiritor.InheritorMap;
 import com.techshroom.lettar.mime.MimeType;
 import com.techshroom.lettar.pipe.PipelineRouter.Builder;
@@ -77,6 +78,7 @@ public class PipelineRouterInitializer extends BaseRouterInitializer<PipelineRou
             }
 
             InheritanceHelper methodInheritance = baseInheritance.inherit(m);
+            InheritorContext ctx = InheritorContext.from(m);
 
             Handler handler;
             Consumer<Pipeline> pipelineConsumer;
@@ -90,7 +92,7 @@ public class PipelineRouterInitializer extends BaseRouterInitializer<PipelineRou
                 handler = wrapMethod(controller, m);
                 pipelineConsumer = carrier::addPipeline;
             }
-            Pipeline pipe = pipeInheritorMap(methodInheritance.getInheritorMap(), handler);
+            Pipeline pipe = pipeInheritorMap(methodInheritance.getInheritorMap(), handler, ctx);
             pipelineConsumer.accept(pipe);
         }
     }
@@ -164,11 +166,11 @@ public class PipelineRouterInitializer extends BaseRouterInitializer<PipelineRou
                 .with(ResponseKeys.request, request);
     }
 
-    private Pipeline pipeInheritorMap(InheritorMap map, Handler handler) {
+    private Pipeline pipeInheritorMap(InheritorMap map, Handler handler, InheritorContext ctx) {
         ImmutableList.Builder<InputPipe> inPipes = ImmutableList.builder();
         ImmutableList.Builder<OutputPipe> outPipes = ImmutableList.builder();
         for (InheritorMap.Entry entry : map) {
-            Pipe pipe = entry.getInheritor().createPipe(entry.getOpaqueObject());
+            Pipe pipe = entry.getInheritor().createPipe(entry.getOpaqueObject(), ctx);
             if (pipe instanceof InputPipe) {
                 inPipes.add((InputPipe) pipe);
             }

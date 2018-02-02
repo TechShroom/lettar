@@ -28,6 +28,7 @@ import com.google.auto.service.AutoService;
 import com.google.common.collect.ImmutableList;
 import com.techshroom.lettar.inheiritor.CombiningInheritor;
 import com.techshroom.lettar.inheiritor.Inheritor;
+import com.techshroom.lettar.inheiritor.InheritorContext;
 import com.techshroom.lettar.inheiritor.Required;
 import com.techshroom.lettar.mime.MimeType;
 import com.techshroom.lettar.pipe.Pipe;
@@ -46,7 +47,7 @@ public class ProducesInheritor extends CombiningInheritor<MimeType, Produces> {
     }
 
     @Override
-    public Pipe createPipe(ImmutableList<MimeType> data) {
+    public Pipe createPipe(ImmutableList<MimeType> data, InheritorContext ctx) {
         if (data.isEmpty()) {
             data = OCTET_STREAM;
         }
