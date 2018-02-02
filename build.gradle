@@ -66,7 +66,7 @@ configurations.all {
      failOnVersionConflict()
 
      // force certain versions of dependencies (including transitive)
-    force 'com.google.guava:guava:23.0', 'com.google.code.findbugs:jsr305:3.0.1'
+    force 'com.google.guava:guava:23.6-jre', 'com.google.code.findbugs:jsr305:3.0.1'
 
      cacheDynamicVersionsFor 10, 'minutes'
      // don't cache changing modules at all
@@ -79,9 +79,9 @@ dependencies {
 
     compile group: 'com.techshroom', name: 'jsr305-plus', version: '0.0.1'
 
-    addAPTReqWComp group: 'com.google.guava', name: 'guava', version: '23.0'
+    addAPTReqWComp group: 'com.google.guava', name: 'guava', version: '23.6-jre'
     addAPT group: 'com.google.auto.service', name: 'auto-service', version: '1.0-rc3'
-    addAPT group: 'com.google.auto.value', name: 'auto-value', version: '1.5.2'
+    addAPT group: 'com.google.auto.value', name: 'auto-value', version: '1.5.3'
     addAPTReq name: 'aopalliance'
     addAPTReq name: 'asm'
     addAPTReq name: 'auto-value'
