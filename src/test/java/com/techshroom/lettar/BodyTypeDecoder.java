@@ -24,21 +24,19 @@
  */
 package com.techshroom.lettar;
 
-import javax.annotation.Nullable;
+import java.lang.reflect.Type;
 
-import com.techshroom.lettar.collections.HttpMultimap;
+import com.techshroom.lettar.body.Decoder;
 
-/**
- * A response is a reply to a routed {@link Request}. It contains a status code,
- * body, and headers.
- */
-public interface Response<B> {
+public class BodyTypeDecoder implements Decoder<String, String> {
 
-    int getStatusCode();
+    @Override
+    public String decode(Type bodyType, String input) {
+        return input + "; type=" + bodyType;
+    }
 
-    @Nullable
-    B getBody();
-
-    HttpMultimap getHeaders();
-
+    @Override
+    public String toString() {
+        return "Body Type Decoder";
+    }
 }

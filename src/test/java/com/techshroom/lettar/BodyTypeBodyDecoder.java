@@ -24,21 +24,24 @@
  */
 package com.techshroom.lettar;
 
-import javax.annotation.Nullable;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.TYPE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-import com.techshroom.lettar.collections.HttpMultimap;
+import java.lang.annotation.Documented;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 
-/**
- * A response is a reply to a routed {@link Request}. It contains a status code,
- * body, and headers.
- */
-public interface Response<B> {
+import com.techshroom.lettar.annotation.BodyDecoder;
+import com.techshroom.lettar.pipe.PipeCompatible;
+import com.techshroom.lettar.pipe.builtins.accept.Produces;
 
-    int getStatusCode();
-
-    @Nullable
-    B getBody();
-
-    HttpMultimap getHeaders();
+@Documented
+@Retention(RUNTIME)
+@Target({ TYPE, METHOD })
+@PipeCompatible(metaAnnotation = true)
+@BodyDecoder(BodyTypeDecoder.class)
+@Produces("text/plain")
+public @interface BodyTypeBodyDecoder {
 
 }

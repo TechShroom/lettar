@@ -75,6 +75,12 @@ public class TestRoutes {
         return SimpleResponse.of(200, "This Content Doesn't Matter!");
     }
 
+    @Path("/bodytype")
+    @BodyTypeBodyDecoder
+    public Response<String> bodyType(Request<String> request) {
+        return SimpleResponse.of(200, request.getBody());
+    }
+
     @ServerErrorHandler
     public Response<String> error(Throwable error) {
         if (error instanceof AssertionError) {

@@ -24,10 +24,12 @@
  */
 package com.techshroom.lettar;
 
+import java.util.Map;
+
 import javax.annotation.Nullable;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableListMultimap;
+import com.google.common.collect.Multimap;
 import com.techshroom.lettar.collections.HttpMultimap;
 
 @AutoValue
@@ -42,10 +44,22 @@ public abstract class SimpleResponse<B> implements Response<B> {
                 .headers(HttpMultimap.of());
     }
 
+    public static <B> Builder<B> builder(@Nullable B body) {
+        return SimpleResponse.<B> builder().body(body);
+    }
+
     @AutoValue.Builder
     public interface Builder<B> {
 
         Builder<B> headers(HttpMultimap headers);
+
+        default Builder<B> headers(Map<String, String> headers) {
+            return headers(HttpMultimap.copyOf(headers));
+        }
+
+        default Builder<B> headers(Multimap<String, String> headers) {
+            return headers(HttpMultimap.copyOf(headers));
+        }
 
         Builder<B> body(@Nullable B body);
 
@@ -66,22 +80,6 @@ public abstract class SimpleResponse<B> implements Response<B> {
     SimpleResponse() {
     }
 
-    @Override
-    public <U> Response<U> withBody(U body) {
-        @SuppressWarnings("unchecked")
-        Builder<U> builder = (Builder<U>) toBuilder();
-        return builder.body(body).build();
-    }
-
     public abstract Builder<B> toBuilder();
-
-    @Override
-    public SimpleResponse<B> addHeader(String key, String value) {
-        ImmutableListMultimap<String, String> headerMap = HttpUtil.headerMapBuilder()
-                .putAll(getHeaders().getMultimap())
-                .put(key, value)
-                .build();
-        return toBuilder().headers(HttpMultimap.copyOfPreSorted(headerMap)).build();
-    }
 
 }

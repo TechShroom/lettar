@@ -33,20 +33,14 @@ import com.techshroom.lettar.routing.HttpMethod;
 @AutoValue
 public abstract class SimpleRequest<B> implements Request<B> {
 
-    public static <B> SimpleRequest<B> copyOfWithBody(Request<?> request, B body) {
-        return SimpleRequest.<B> builder()
-                .method(request.getMethod())
-                .path(request.getPath())
-                .queryParts(request.getQueryParts())
-                .headers(request.getHeaders())
-                .body(body)
-                .build();
-    }
-
     public static <B> Builder<B> builder() {
         return new AutoValue_SimpleRequest.Builder<B>()
                 .headers(HttpMultimap.of())
                 .queryParts(HttpMultimap.of());
+    }
+
+    public static <B> Builder<B> builder(@Nullable B body) {
+        return SimpleRequest.<B> builder().body(body);
     }
 
     @AutoValue.Builder
@@ -67,13 +61,6 @@ public abstract class SimpleRequest<B> implements Request<B> {
     }
 
     SimpleRequest() {
-    }
-
-    @Override
-    public <U> Request<U> withBody(U body) {
-        @SuppressWarnings("unchecked")
-        Builder<U> builder = (Builder<U>) toBuilder();
-        return builder.body(body).build();
     }
 
     public abstract Builder<B> toBuilder();

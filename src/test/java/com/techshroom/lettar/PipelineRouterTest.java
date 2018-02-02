@@ -25,7 +25,7 @@
 package com.techshroom.lettar;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -59,6 +59,15 @@ public class PipelineRouterTest {
     }
 
     @Test
+    public void testBodyTypeDecoder() throws Exception {
+        Request<String> request = SimpleRequest.builder("msg")
+                .method(HttpMethod.GET)
+                .path("/bodytype")
+                .build();
+        assertEqualsIgnContentType(SimpleResponse.of(200, "msg; type=class java.lang.String"), router.route(request));
+    }
+
+    @Test
     public void testQueryRoutes() throws Exception {
         assertEqualsIgnContentType(SimpleResponse.of(200, "Queried 'index' Page"), router.route(request("/query",
                 HttpMultimap.copyOf(ImmutableMap.of("page", "index")))));
@@ -73,8 +82,10 @@ public class PipelineRouterTest {
 
     @Test
     public void test404Routes() throws Exception {
-        SimpleResponse<String> notFound = SimpleResponse.of(404, "404 Page")
-                .addHeader("content-type", "application/octet-stream");
+        SimpleResponse<String> notFound = SimpleResponse.builder("404 Page")
+                .statusCode(404)
+                .headers(ImmutableMap.of("content-type", "application/octet-stream"))
+                .build();
 
         assertEquals(notFound, router.route(request("/nonexist")));
         assertEquals(notFound, router.route(request("//list")));

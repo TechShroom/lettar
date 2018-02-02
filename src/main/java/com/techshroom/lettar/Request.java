@@ -46,6 +46,4 @@ public interface Request<B> {
     @Nullable
     B getBody();
 
-    <U> Request<U> withBody(@Nullable U body);
-
 }
