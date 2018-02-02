@@ -61,4 +61,9 @@ public class PathPipe implements InputPipe {
         }
         return request.with(parts, match.get().getParts());
     }
+
+    @Override
+    public String toString() {
+        return "Path{" + pathMatcher + "}";
+    }
 }

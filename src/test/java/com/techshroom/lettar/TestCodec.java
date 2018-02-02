@@ -35,8 +35,11 @@ public class TestCodec implements SimpleCodec<String, String> {
 
     @Override
     public String decode(String input) {
-        // "parse" json!
         return input == null ? null : input.replace("Encoded: ", "");
     }
 
+    @Override
+    public String toString() {
+        return "Test Codec";
+    }
 }

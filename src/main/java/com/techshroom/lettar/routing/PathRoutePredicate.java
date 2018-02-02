@@ -83,6 +83,11 @@ public class PathRoutePredicate {
             return index;
         }
 
+        @Override
+        public String toString() {
+            return part;
+        }
+
     }
 
     private static final class RegexPart implements Part {
@@ -103,6 +108,11 @@ public class PathRoutePredicate {
             return index;
         }
 
+        @Override
+        public String toString() {
+            return regex.pattern();
+        }
+
     }
 
     private enum WildcardPart implements Part {
@@ -112,6 +122,11 @@ public class PathRoutePredicate {
         public int consume(List<String> parts, int index) {
             return index + 1;
         }
+
+        @Override
+        public String toString() {
+            return "*";
+        }
     }
 
     private enum EndChompPart implements Part {
@@ -120,6 +135,11 @@ public class PathRoutePredicate {
         @Override
         public int consume(List<String> parts, int index) {
             return parts.size();
+        }
+
+        @Override
+        public String toString() {
+            return "**";
         }
     }
 
@@ -239,10 +259,18 @@ public class PathRoutePredicate {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
+        sb.append("/");
         for (int i = 0; i < parts.size(); i++) {
             boolean cap = capturing.get(i);
             if (cap) {
                 sb.append('{');
+            }
+            sb.append(parts.get(i));
+            if (cap) {
+                sb.append('}');
+            }
+            if (i + 1 < parts.size()) {
+                sb.append('/');
             }
         }
         return sb.toString();
