@@ -31,6 +31,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 import com.techshroom.lettar.Request;
+import com.techshroom.lettar.pipe.PipeCompatible;
 
 /**
  * Annotate a method with this to return a proper response when there is no
@@ -40,6 +41,8 @@ import com.techshroom.lettar.Request;
 @Documented
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
+@PipeCompatible(metaAnnotation = true)
+@AnythingGoes
 public @interface NotFoundHandler {
 
 }

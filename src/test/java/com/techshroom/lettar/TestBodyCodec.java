@@ -32,9 +32,9 @@ import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-import com.techshroom.lettar.annotation.BodyCodec;
 import com.techshroom.lettar.pipe.PipeCompatible;
 import com.techshroom.lettar.pipe.builtins.accept.Produces;
+import com.techshroom.lettar.pipe.builtins.codec.BodyCodec;
 
 @Documented
 @Retention(RUNTIME)

@@ -24,34 +24,43 @@
  */
 package com.techshroom.lettar.pipe.builtins.accept;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
+
+import java.util.Optional;
+
 import com.google.auto.service.AutoService;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.techshroom.lettar.inheiritor.CombiningInheritor;
 import com.techshroom.lettar.inheiritor.Inheritor;
 import com.techshroom.lettar.inheiritor.InheritorContext;
 import com.techshroom.lettar.inheiritor.Required;
 import com.techshroom.lettar.mime.MimeType;
 import com.techshroom.lettar.pipe.Pipe;
-import com.techshroom.lettar.routing.AcceptPredicate;
 
 @AutoService(Inheritor.class)
 @Required
-public class ProducesInheritor extends CombiningInheritor<MimeType, Produces> {
+public class ProducesInheritor extends CombiningInheritor<ProducesData, Produces> {
 
-    private static final ImmutableList<MimeType> OCTET_STREAM = ImmutableList.of(
-            MimeType.of("application", "octet-stream"));
+    private static final MimeType DEFAULT = MimeType.of("application", "octet-stream");
 
     @Override
-    protected MimeType interpretAnnotation(Produces annotation) {
-        return MimeType.parse(annotation.value());
+    protected ProducesData interpretAnnotation(Produces annotation) {
+        return ProducesData.from(annotation);
     }
 
     @Override
-    public Pipe createPipe(ImmutableList<MimeType> data, InheritorContext ctx) {
-        if (data.isEmpty()) {
-            data = OCTET_STREAM;
+    public Pipe createPipe(ImmutableList<ProducesData> data, InheritorContext ctx) {
+        ImmutableList<MimeType> mimeTypes = data.stream()
+                .map(ProducesData::getMimeType)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(toImmutableList());
+        MimeType defaultType = null;
+        if (data.isEmpty() || Iterables.any(data, ProducesData::isMatchAnything)) {
+            defaultType = Iterables.getFirst(mimeTypes, DEFAULT);
         }
-        return AcceptPipe.create(AcceptPredicate.of(data));
+        return AcceptPipe.create(mimeTypes, defaultType);
     }
 
 }

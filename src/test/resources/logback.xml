@@ -5,8 +5,8 @@
 		</encoder>
 	</appender>
 	
-	<logger name="com.techshroom.lettar.pipe.impl.SimplePipeline" level="INFO">
-	</logger>
+	<logger name="com.techshroom.lettar.pipe.impl.SimplePipeline" level="INFO"/>
+	<logger name="com.techshroom.lettar.pipe.PipelineRouterInitializer" level="INFO"/>
 
 	<root level="DEBUG">
 		<appender-ref ref="STDOUT" />

@@ -100,7 +100,7 @@ public class PipelineRouter<IB, OB> implements Router<IB, OB> {
                 .orElseGet(() -> executePipeline(notFoundPipeline, flow));
         if (response == null) {
             // NFP overflowed, this is not allowed!
-            response = handleStateError(flow, "Not Found Pipeline overflow detected.");
+            response = handleStateError(flow, "Not Found Pipeline overflow detected.", null);
         }
         return extractResponse(response);
     }
@@ -121,8 +121,8 @@ public class PipelineRouter<IB, OB> implements Router<IB, OB> {
                 .build();
     }
 
-    private FlowingResponse handleStateError(FlowingRequest request, String error) {
-        return handleError(request, new IllegalStateException(error), false);
+    private FlowingResponse handleStateError(FlowingRequest request, String error, Throwable cause) {
+        return handleError(request, new IllegalStateException(error, cause), false);
     }
 
     private static final String OH_NO_BODY = "A pipeline leaked while handling another error. This is very bad. Contact the nearest developer immediately.\n";
@@ -146,7 +146,7 @@ public class PipelineRouter<IB, OB> implements Router<IB, OB> {
         FlowingRequest reqWithErr = request.with(RequestKeys.error, t);
         FlowingResponse response = executePipeline(serverErrorPipeline, reqWithErr);
         if (response == null) {
-            return handleStateError(request, "Server Error Pipeline overflow detected.");
+            return handleStateError(request, "Server Error Pipeline overflow detected.", t);
         }
         return response;
     }

@@ -24,38 +24,70 @@
  */
 package com.techshroom.lettar.pipe.builtins.accept;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
+
+import java.util.List;
 import java.util.Optional;
 
+import javax.annotation.Nullable;
+
+import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Streams;
+import com.techshroom.lettar.mime.AcceptMime;
 import com.techshroom.lettar.mime.MimeType;
 import com.techshroom.lettar.pipe.BiPipe;
 import com.techshroom.lettar.pipe.FlowingRequest;
 import com.techshroom.lettar.pipe.FlowingResponse;
 import com.techshroom.lettar.pipe.Key;
 import com.techshroom.lettar.pipe.ResponseKeys;
-import com.techshroom.lettar.routing.AcceptPredicate;
 
 public class AcceptPipe implements BiPipe {
 
+    // Limit number of splits to prevent attacks -- there shouldn't be this many
+    private static final Splitter ACCEPT_SPLITTER = Splitter.on(',').limit(50);
     public static final Key<MimeType> contentType = Key.of("Request.contentType");
 
-    public static AcceptPipe create(AcceptPredicate acceptMatcher) {
-        return new AcceptPipe(acceptMatcher);
+    public static AcceptPipe create(Iterable<MimeType> providedTypes, @Nullable MimeType defaultType) {
+        return new AcceptPipe(ImmutableList.copyOf(providedTypes), Optional.ofNullable(defaultType));
     }
 
-    private final AcceptPredicate acceptMatcher;
+    private final ImmutableList<MimeType> providedTypes;
+    private final Optional<MimeType> defaultType;
 
-    private AcceptPipe(AcceptPredicate acceptMatcher) {
-        this.acceptMatcher = acceptMatcher;
+    private AcceptPipe(ImmutableList<MimeType> providedTypes, Optional<MimeType> defaultType) {
+        this.providedTypes = providedTypes;
+        this.defaultType = defaultType;
     }
 
     @Override
     public FlowingRequest pipeIn(FlowingRequest request) {
         String accept = request.getHeaders().getSingleValueOrDefault("accept", "*/*");
-        Optional<MimeType> match = acceptMatcher.matches(accept);
-        if (!match.isPresent()) {
+        List<MimeType> acceptTypes = getAcceptTypes(accept);
+        Optional<MimeType> accepted = negotiateContentType(acceptTypes, providedTypes);
+        if (!accepted.isPresent()) {
             return null;
         }
-        return request.with(contentType, match.get());
+        return request.with(contentType, accepted.get());
+    }
+
+    private List<MimeType> getAcceptTypes(String accept) {
+        return Streams.stream(ACCEPT_SPLITTER.split(accept))
+                .map(AcceptMime::parse)
+                .sorted()
+                .map(AcceptMime::getMimeType)
+                .collect(toImmutableList());
+    }
+
+    private Optional<MimeType> negotiateContentType(List<MimeType> acceptedTypes, List<MimeType> providedTypes) {
+        for (MimeType acceptable : acceptedTypes) {
+            for (MimeType provided : providedTypes) {
+                if (provided.isAssignableTo(acceptable)) {
+                    return Optional.of(provided);
+                }
+            }
+        }
+        return defaultType;
     }
 
     @Override
@@ -66,6 +98,6 @@ public class AcceptPipe implements BiPipe {
 
     @Override
     public String toString() {
-        return "Accept{" + acceptMatcher + "}";
+        return "Accept{" + providedTypes + "}";
     }
 }

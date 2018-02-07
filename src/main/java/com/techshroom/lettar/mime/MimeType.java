@@ -83,16 +83,20 @@ public abstract class MimeType {
      * @return {@code true} if this MIME type is a subtype of the provided MIME
      *         type
      */
-    public final boolean matches(MimeType mimeType) {
+    public final boolean isAssignableTo(MimeType mimeType) {
         if (mimeType.getPrimaryType().equals("*")) {
             // matches all
             return true;
         }
-        if (!mimeType.getPrimaryType().equals(getPrimaryType())) {
+        if (!mimeType.getPrimaryType().equalsIgnoreCase(getPrimaryType())) {
             return false;
         }
         String mtSec = mimeType.getSecondaryType();
-        return mtSec.equals("*") || mtSec.equals(getSecondaryType());
+        return mtSec.equals("*") || mtSec.equalsIgnoreCase(getSecondaryType());
+    }
+    
+    public final boolean isWildcard() {
+        return getPrimaryType().equals("*") || getSecondaryType().equals("*");
     }
 
     @Override

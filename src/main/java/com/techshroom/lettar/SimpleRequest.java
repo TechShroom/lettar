@@ -24,9 +24,12 @@
  */
 package com.techshroom.lettar;
 
+import java.util.Map;
+
 import javax.annotation.Nullable;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.collect.Multimap;
 import com.techshroom.lettar.collections.HttpMultimap;
 import com.techshroom.lettar.routing.HttpMethod;
 
@@ -51,6 +54,14 @@ public abstract class SimpleRequest<B> implements Request<B> {
         Builder<B> path(String path);
 
         Builder<B> headers(HttpMultimap headers);
+        
+        default Builder<B> headers(Map<String, String> headers) {
+            return headers(HttpMultimap.copyOf(headers));
+        }
+        
+        default Builder<B> headers(Multimap<String, String> headers) {
+            return headers(HttpMultimap.copyOf(headers));
+        }
 
         Builder<B> queryParts(HttpMultimap queryParts);
 

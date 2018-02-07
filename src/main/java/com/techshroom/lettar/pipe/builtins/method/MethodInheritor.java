@@ -38,10 +38,7 @@ import com.techshroom.lettar.routing.HttpMethodPredicate;
 @Required
 public class MethodInheritor extends CombiningInheritor<HttpMethod, Method> {
     
-    @Override
-    public ImmutableList<HttpMethod> getDefault() {
-        return ImmutableList.of(HttpMethod.GET);
-    }
+    private static final ImmutableList<HttpMethod> DEFAULT = ImmutableList.of(HttpMethod.GET);
 
     @Override
     protected HttpMethod interpretAnnotation(Method annotation) {
@@ -50,6 +47,9 @@ public class MethodInheritor extends CombiningInheritor<HttpMethod, Method> {
 
     @Override
     public Pipe createPipe(ImmutableList<HttpMethod> data, InheritorContext ctx) {
+        if (data.isEmpty()) {
+            data = DEFAULT;
+        }
         return MethodPipe.create(HttpMethodPredicate.of(data));
     }
 }

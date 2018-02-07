@@ -32,6 +32,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 import com.techshroom.lettar.Request;
+import com.techshroom.lettar.pipe.PipeCompatible;
 
 /**
  * Annotate a method with this to return a proper response when an exception
@@ -41,6 +42,8 @@ import com.techshroom.lettar.Request;
 @Documented
 @Retention(RUNTIME)
 @Target(METHOD)
+@PipeCompatible(metaAnnotation = true)
+@AnythingGoes
 public @interface ServerErrorHandler {
 
 }

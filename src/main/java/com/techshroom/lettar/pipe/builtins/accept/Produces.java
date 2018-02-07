@@ -48,6 +48,21 @@ import com.techshroom.lettar.pipe.PipeCompatible;
 @Repeatable(ProducesMultiple.class)
 public @interface Produces {
 
+    /**
+     * Use this for {@link #value()} to indicate that it should not be used for
+     * matching or selection.
+     */
+    static String UNSPECIFIED = "Unspecified content type.";
+
     String value();
+
+    /**
+     * If {@code true}, this route will match any {@code Accept} header,
+     * regardless of actual types specified. The content-type will still be set
+     * according to {@link #value()}.
+     * 
+     * @return {@code true} if this route matches any {@code Accept} header
+     */
+    boolean matchesAnything() default false;
 
 }

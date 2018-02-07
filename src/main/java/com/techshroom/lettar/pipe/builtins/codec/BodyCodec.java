@@ -22,7 +22,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.techshroom.lettar.annotation;
+package com.techshroom.lettar.pipe.builtins.codec;
 
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.TYPE;
@@ -32,14 +32,14 @@ import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-import com.techshroom.lettar.body.Encoder;
+import com.techshroom.lettar.body.Codec;
 import com.techshroom.lettar.pipe.PipeCompatible;
 
 @Documented
 @Retention(RUNTIME)
 @Target({ TYPE, METHOD })
 @PipeCompatible
-public @interface BodyEncoder {
+public @interface BodyCodec {
 
-    Class<? extends Encoder<?, ?>> value();
+    Class<? extends Codec<?, ?, ?, ?>> value();
 }

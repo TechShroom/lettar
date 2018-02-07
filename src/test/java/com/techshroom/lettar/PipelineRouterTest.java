@@ -25,7 +25,7 @@
 package com.techshroom.lettar;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -92,6 +92,18 @@ public class PipelineRouterTest {
         assertEquals(notFound, router.route(request("/apiary/drapiary/list")));
     }
 
+    @Test
+    public void test404WithBadContentType() throws Exception {
+        SimpleResponse<String> notFound = SimpleResponse.builder("404 Page")
+                .statusCode(404)
+                .headers(ImmutableMap.of("content-type", "application/octet-stream"))
+                .build();
+
+        assertEquals(notFound, router.route(requestBuilder("/json")
+                .headers(ImmutableMap.of("accept", "impossible/notathing"))
+                .build()));
+    }
+
     private static void assertEqualsIgnContentType(SimpleResponse<String> expected, Response<String> actual) {
         assertEquals(expected.getBody(), actual.getBody());
         assertEquals(expected.getStatusCode(), actual.getStatusCode());
@@ -105,16 +117,18 @@ public class PipelineRouterTest {
     }
 
     private static Request<String> request(String path) {
-        return SimpleRequest.<String> builder()
-                .method(HttpMethod.GET)
-                .path(path)
+        return requestBuilder(path)
                 .build();
     }
 
-    private static Request<String> request(String path, HttpMultimap query) {
+    private static SimpleRequest.Builder<String> requestBuilder(String path) {
         return SimpleRequest.<String> builder()
                 .method(HttpMethod.GET)
-                .path(path)
+                .path(path);
+    }
+
+    private static Request<String> request(String path, HttpMultimap query) {
+        return requestBuilder(path)
                 .queryParts(query)
                 .build();
     }

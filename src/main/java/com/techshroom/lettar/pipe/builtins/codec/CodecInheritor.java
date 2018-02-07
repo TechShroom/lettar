@@ -25,7 +25,6 @@
 package com.techshroom.lettar.pipe.builtins.codec;
 
 import com.google.auto.service.AutoService;
-import com.techshroom.lettar.annotation.BodyCodec;
 import com.techshroom.lettar.body.Codec;
 import com.techshroom.lettar.inheiritor.Inheritor;
 import com.techshroom.lettar.inheiritor.InheritorContext;
