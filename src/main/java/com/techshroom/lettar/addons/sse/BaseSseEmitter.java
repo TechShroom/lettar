@@ -22,7 +22,9 @@ public class BaseSseEmitter implements SseEmitter {
         SimpleResponse<InputStream> response = responseBuilder.get()
                 .statusCodeIfUnset(200)
                 .body(stream)
-                .modifyHeaders(headers -> headers.setIfAbsent("content-type", "text/event-stream"))
+                .modifyHeaders(headers -> headers
+                        .setIfAbsent("content-type", "text/event-stream")
+                        .setIfAbsent("transfer-encoding", "chunked"))
                 .build();
         stage = CompletableFuture.completedFuture(response);
     }
@@ -71,6 +73,11 @@ public class BaseSseEmitter implements SseEmitter {
     @Override
     public void close() throws IOException {
         stream.close();
+    }
+
+    @Override
+    public boolean isOpen() {
+        return stream.isOpen();
     }
 
 }

@@ -147,7 +147,20 @@ public class SseInputStream extends InputStream {
     }
 
     private void checkOpen() {
-        checkState(eofAtThisIndex == -1 && buffer != null, "closed");
+        checkState(rawIsOpen(), "closed");
+    }
+
+    private boolean rawIsOpen() {
+        return eofAtThisIndex == -1 && buffer != null;
+    }
+    
+    public boolean isOpen() {
+        lock.lock();
+        try {
+            return rawIsOpen();
+        } finally {
+            lock.unlock();
+        }
     }
 
     @Override

@@ -11,4 +11,7 @@ public interface SseEmitter extends Closeable {
     void emit(ServerSentEvent event);
 
     CompletionStage<Response<InputStream>> getResponseStage();
+
+    boolean isOpen();
+
 }
