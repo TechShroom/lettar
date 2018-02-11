@@ -22,22 +22,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.techshroom.lettar;
+package com.techshroom.lettar.util;
 
-import java.util.List;
+import com.google.common.collect.ImmutableListMultimap;
+import com.google.common.collect.ImmutableMap;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+/**
+ * Utilities for HTTP.
+ */
+public class HttpUtil {
 
-import com.google.common.base.Throwables;
-
-public class Logging {
-
-    public static Logger getLogger() {
-        List<StackTraceElement> stack = Throwables.lazyStackTrace(new Throwable());
-        // 0 - this code
-        // 1 - invoker (we want this)
-        return LoggerFactory.getLogger(stack.get(1).getClassName());
+    /**
+     * Creates a special {@link ImmutableMap} builder that creates
+     * case-insensitive maps, as required for headers.
+     * 
+     * @return a header map builder
+     */
+    public static ImmutableListMultimap.Builder<String, String> headerMapBuilder() {
+        return ImmutableListMultimap.<String, String> builder()
+                .orderKeysBy(String.CASE_INSENSITIVE_ORDER);
     }
 
 }

@@ -24,22 +24,16 @@
  */
 package com.techshroom.lettar;
 
-import static com.google.common.collect.ImmutableList.toImmutableList;
-import static org.junit.Assert.assertEquals;
-
-import java.util.concurrent.CompletionStage;
-
 import org.junit.Before;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Multimap;
 import com.techshroom.lettar.collections.HttpMultimap;
 import com.techshroom.lettar.pipe.PipelineRouterInitializer;
 import com.techshroom.lettar.routing.HttpMethod;
 
-public class PipelineRouterTest {
+public class PipelineRouterTest extends AbstractRouterTest {
 
     private Router<String, String> router;
 
@@ -51,13 +45,13 @@ public class PipelineRouterTest {
 
     @Test
     public void testPathRoutes() throws Exception {
-        assertEqualsIgnContentType(SimpleResponse.of(200, "Index Page"), router.route(request("/")));
-        assertEqualsIgnContentType(SimpleResponse.of(200, "Index Page"), router.route(request("//")));
-        assertEqualsIgnContentType(SimpleResponse.of(200, "[a,b,c,res1]"), router.route(request("/res1/list")));
-        assertEqualsIgnContentType(SimpleResponse.of(200, "[a,b,c,res2]"), router.route(request("/res2/list")));
-        assertEqualsIgnContentType(SimpleResponse.of(200, "CHOMP! nomnomnom"), router.route(request("/ec/nomnomnom")));
-        assertEqualsIgnContentType(SimpleResponse.of(200, "RE: 42"), router.route(request("/re/42")));
-        assertEqualsIgnContentType(SimpleResponse.of(404, "404 Page"), router.route(request("/re/NaN")));
+        assertRespEqualsIgnContentType(SimpleResponse.of(200, "Index Page"), router.route(request("/")));
+        assertRespEqualsIgnContentType(SimpleResponse.of(200, "Index Page"), router.route(request("//")));
+        assertRespEqualsIgnContentType(SimpleResponse.of(200, "[a,b,c,res1]"), router.route(request("/res1/list")));
+        assertRespEqualsIgnContentType(SimpleResponse.of(200, "[a,b,c,res2]"), router.route(request("/res2/list")));
+        assertRespEqualsIgnContentType(SimpleResponse.of(200, "CHOMP! nomnomnom"), router.route(request("/ec/nomnomnom")));
+        assertRespEqualsIgnContentType(SimpleResponse.of(200, "RE: 42"), router.route(request("/re/42")));
+        assertRespEqualsIgnContentType(SimpleResponse.of(404, "404 Page"), router.route(request("/re/NaN")));
     }
 
     @Test
@@ -66,20 +60,20 @@ public class PipelineRouterTest {
                 .method(HttpMethod.GET)
                 .path("/bodytype")
                 .build();
-        assertEqualsIgnContentType(SimpleResponse.of(200, "msg; type=class java.lang.String"), router.route(request));
+        assertRespEqualsIgnContentType(SimpleResponse.of(200, "msg; type=class java.lang.String"), router.route(request));
     }
 
     @Test
     public void testQueryRoutes() throws Exception {
-        assertEqualsIgnContentType(SimpleResponse.of(200, "Queried 'index' Page"), router.route(request("/query",
+        assertRespEqualsIgnContentType(SimpleResponse.of(200, "Queried 'index' Page"), router.route(request("/query",
                 HttpMultimap.copyOf(ImmutableMap.of("page", "index")))));
-        assertEqualsIgnContentType(SimpleResponse.of(200, "Queried 'action' Page"), router.route(request("/query",
+        assertRespEqualsIgnContentType(SimpleResponse.of(200, "Queried 'action' Page"), router.route(request("/query",
                 HttpMultimap.copyOf(ImmutableMap.of("page", "action", "action", "foobar")))));
     }
 
     @Test
     public void testErrorRoutes() throws Exception {
-        assertEqualsIgnContentType(SimpleResponse.of(500, "Error Here"), router.route(request("/error")));
+        assertRespEqualsIgnContentType(SimpleResponse.of(500, "Error Here"), router.route(request("/error")));
     }
 
     @Test
@@ -89,9 +83,9 @@ public class PipelineRouterTest {
                 .headers(ImmutableMap.of("content-type", "application/octet-stream"))
                 .build();
 
-        assertEquals(notFound, router.route(request("/nonexist")).toCompletableFuture().get());
-        assertEquals(notFound, router.route(request("//list")).toCompletableFuture().get());
-        assertEquals(notFound, router.route(request("/apiary/drapiary/list")).toCompletableFuture().get());
+        assertRespEquals(notFound, router.route(request("/nonexist")));
+        assertRespEquals(notFound, router.route(request("//list")));
+        assertRespEquals(notFound, router.route(request("/apiary/drapiary/list")));
     }
 
     @Test
@@ -101,44 +95,14 @@ public class PipelineRouterTest {
                 .headers(ImmutableMap.of("content-type", "application/octet-stream"))
                 .build();
 
-        assertEquals(notFound, router.route(requestBuilder("/json")
+        assertRespEquals(notFound, router.route(requestBuilder("/json")
                 .headers(ImmutableMap.of("accept", "impossible/notathing"))
-                .build()).toCompletableFuture().get());
+                .build()));
     }
 
     @Test
     public void testAsyncRoutes() throws Exception {
-        assertEqualsIgnContentType(SimpleResponse.of(200, "async op!"), router.route(request("/async")));
-    }
-
-    private static void assertEqualsIgnContentType(SimpleResponse<String> expected, CompletionStage<Response<String>> actualStage) throws Exception {
-        Response<String> actual = actualStage.toCompletableFuture().get();
-        assertEquals(expected.getBody(), actual.getBody());
-        assertEquals(expected.getStatusCode(), actual.getStatusCode());
-        // strip content type from headers
-        Multimap<String, String> headers = HttpUtil.headerMapBuilder().putAll(
-                actual.getHeaders().getMultimap().entries().stream()
-                        .filter(e -> !"content-type".equalsIgnoreCase(e.getKey()))
-                        .collect(toImmutableList()))
-                .build();
-        assertEquals(expected.getHeaders().getMultimap(), headers);
-    }
-
-    private static Request<String> request(String path) {
-        return requestBuilder(path)
-                .build();
-    }
-
-    private static SimpleRequest.Builder<String> requestBuilder(String path) {
-        return SimpleRequest.<String> builder()
-                .method(HttpMethod.GET)
-                .path(path);
-    }
-
-    private static Request<String> request(String path, HttpMultimap query) {
-        return requestBuilder(path)
-                .queryParts(query)
-                .build();
+        assertRespEqualsIgnContentType(SimpleResponse.of(200, "async op!"), router.route(request("/async")));
     }
 
 }

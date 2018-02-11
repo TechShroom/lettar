@@ -30,13 +30,13 @@ import java.util.concurrent.CompletionStage;
 import org.slf4j.Logger;
 
 import com.google.common.collect.ImmutableList;
-import com.techshroom.lettar.Logging;
 import com.techshroom.lettar.pipe.FlowingRequest;
 import com.techshroom.lettar.pipe.FlowingResponse;
 import com.techshroom.lettar.pipe.Handler;
 import com.techshroom.lettar.pipe.InputPipe;
 import com.techshroom.lettar.pipe.OutputPipe;
 import com.techshroom.lettar.pipe.Pipeline;
+import com.techshroom.lettar.util.Logging;
 
 public class SimplePipeline implements Pipeline {
 

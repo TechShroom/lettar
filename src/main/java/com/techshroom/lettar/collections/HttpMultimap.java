@@ -32,7 +32,7 @@ import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
-import com.techshroom.lettar.HttpUtil;
+import com.techshroom.lettar.util.HttpUtil;
 
 @AutoValue
 public abstract class HttpMultimap {
