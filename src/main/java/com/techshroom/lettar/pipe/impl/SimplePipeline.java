@@ -25,6 +25,7 @@
 package com.techshroom.lettar.pipe.impl;
 
 import java.util.List;
+import java.util.concurrent.CompletionStage;
 
 import org.slf4j.Logger;
 
@@ -38,7 +39,7 @@ import com.techshroom.lettar.pipe.OutputPipe;
 import com.techshroom.lettar.pipe.Pipeline;
 
 public class SimplePipeline implements Pipeline {
-    
+
     private static final Logger LOGGER = Logging.getLogger();
 
     // TODO if we want performance, this could _easily_ be redone with
@@ -78,14 +79,13 @@ public class SimplePipeline implements Pipeline {
     }
 
     @Override
-    public FlowingResponse handle(FlowingRequest request) {
+    public CompletionStage<FlowingResponse> handle(FlowingRequest request) {
         FlowingRequest inputPiped = pipeInput(request);
         if (inputPiped == null) {
             return null;
         }
-        FlowingResponse handled = getHandler().handle(inputPiped);
-        FlowingResponse outputPiped = pipeOutput(handled);
-        return outputPiped;
+        return getHandler().handle(inputPiped)
+                .thenApplyAsync(this::pipeOutput);
     }
 
     private FlowingRequest pipeInput(FlowingRequest request) {

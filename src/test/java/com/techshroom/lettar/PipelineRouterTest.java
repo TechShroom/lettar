@@ -27,6 +27,8 @@ package com.techshroom.lettar;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static org.junit.Assert.assertEquals;
 
+import java.util.concurrent.CompletionStage;
+
 import org.junit.Before;
 import org.junit.Test;
 
@@ -87,9 +89,9 @@ public class PipelineRouterTest {
                 .headers(ImmutableMap.of("content-type", "application/octet-stream"))
                 .build();
 
-        assertEquals(notFound, router.route(request("/nonexist")));
-        assertEquals(notFound, router.route(request("//list")));
-        assertEquals(notFound, router.route(request("/apiary/drapiary/list")));
+        assertEquals(notFound, router.route(request("/nonexist")).toCompletableFuture().get());
+        assertEquals(notFound, router.route(request("//list")).toCompletableFuture().get());
+        assertEquals(notFound, router.route(request("/apiary/drapiary/list")).toCompletableFuture().get());
     }
 
     @Test
@@ -101,10 +103,11 @@ public class PipelineRouterTest {
 
         assertEquals(notFound, router.route(requestBuilder("/json")
                 .headers(ImmutableMap.of("accept", "impossible/notathing"))
-                .build()));
+                .build()).toCompletableFuture().get());
     }
 
-    private static void assertEqualsIgnContentType(SimpleResponse<String> expected, Response<String> actual) {
+    private static void assertEqualsIgnContentType(SimpleResponse<String> expected, CompletionStage<Response<String>> actualStage) throws Exception {
+        Response<String> actual = actualStage.toCompletableFuture().get();
         assertEquals(expected.getBody(), actual.getBody());
         assertEquals(expected.getStatusCode(), actual.getStatusCode());
         // strip content type from headers

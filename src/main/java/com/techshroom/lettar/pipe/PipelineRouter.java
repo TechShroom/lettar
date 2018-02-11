@@ -28,6 +28,10 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+
+import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
 
@@ -91,25 +95,47 @@ public class PipelineRouter<IB, OB> implements Router<IB, OB> {
     }
 
     @Override
-    public Response<OB> route(Request<IB> request) {
+    public CompletionStage<Response<OB>> route(Request<IB> request) {
         FlowingRequest flow = BaseFlowingRequest.wrap(request);
-        FlowingResponse response = pipelines.stream()
+        CompletionStage<FlowingResponse> resStage = pipelines.stream()
                 .map(p -> executePipeline(p, flow))
                 .filter(Objects::nonNull)
                 .findFirst()
                 .orElseGet(() -> executePipeline(notFoundPipeline, flow));
-        if (response == null) {
+        if (resStage == null) {
             // NFP overflowed, this is not allowed!
-            response = handleStateError(flow, "Not Found Pipeline overflow detected.", null);
+            resStage = handleStateError(flow, "Not Found Pipeline overflow detected.", null);
         }
-        return extractResponse(response);
+        return resStage
+                .thenCompose(response -> {
+                    return CompletableFuture.completedFuture(response);
+                })
+                .thenApply(this::extractResponse);
     }
 
-    private FlowingResponse executePipeline(Pipeline pipeline, FlowingRequest flow) {
+    @Nullable
+    private CompletionStage<FlowingResponse> executePipeline(Pipeline pipeline, FlowingRequest flow) {
         try {
-            return pipeline.handle(flow);
+            CompletionStage<FlowingResponse> resStage = pipeline.handle(flow);
+
+            if (resStage == null) {
+                return null;
+            }
+
+            CompletableFuture<FlowingResponse> ret = new CompletableFuture<>();
+            resStage.whenComplete((val, ex) -> pipelineCompletion(flow, ret, val, ex));
+            return ret;
         } catch (Throwable t) {
             return handleError(flow, t, flow.get(RequestKeys.error) == null);
+        }
+    }
+
+    private void pipelineCompletion(FlowingRequest flow, CompletableFuture<FlowingResponse> ret, FlowingResponse val, Throwable ex) {
+        if (ex != null) {
+            handleError(flow, ex, flow.get(RequestKeys.error) == null)
+                    .whenComplete((v, e) -> pipelineCompletion(flow, ret, v, e));
+        } else {
+            ret.complete(val);
         }
     }
 
@@ -121,7 +147,7 @@ public class PipelineRouter<IB, OB> implements Router<IB, OB> {
                 .build();
     }
 
-    private FlowingResponse handleStateError(FlowingRequest request, String error, Throwable cause) {
+    private CompletionStage<FlowingResponse> handleStateError(FlowingRequest request, String error, Throwable cause) {
         return handleError(request, new IllegalStateException(error, cause), false);
     }
 
@@ -136,15 +162,16 @@ public class PipelineRouter<IB, OB> implements Router<IB, OB> {
                     .put("Content-type", "text/plain")
                     .build());
 
-    private FlowingResponse handleError(FlowingRequest request, Throwable t, boolean firstError) {
+    private CompletionStage<FlowingResponse> handleError(FlowingRequest request, Throwable t, boolean firstError) {
         if (!firstError) {
             LOGGER.error("Bad pipeline state detected", t);
-            return BaseFlowingResponse.from(500,
+            return CompletableFuture.completedFuture(BaseFlowingResponse.from(500,
                     OH_NO_BODY,
-                    OH_NO_HEADERS);
+                    OH_NO_HEADERS));
         }
         FlowingRequest reqWithErr = request.with(RequestKeys.error, t);
-        FlowingResponse response = executePipeline(serverErrorPipeline, reqWithErr);
+        CompletionStage<FlowingResponse> response = executePipeline(serverErrorPipeline, reqWithErr);
+
         if (response == null) {
             return handleStateError(request, "Server Error Pipeline overflow detected.", t);
         }

@@ -24,6 +24,8 @@
  */
 package com.techshroom.lettar.pipe;
 
+import java.util.concurrent.CompletionStage;
+
 import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableList;
@@ -37,6 +39,6 @@ public interface Pipeline {
     ImmutableList<OutputPipe> getOutputPipes();
 
     @Nullable
-    FlowingResponse handle(FlowingRequest request);
+    CompletionStage<FlowingResponse> handle(FlowingRequest request);
 
 }
