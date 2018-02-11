@@ -106,6 +106,11 @@ public class PipelineRouterTest {
                 .build()).toCompletableFuture().get());
     }
 
+    @Test
+    public void testAsyncRoutes() throws Exception {
+        assertEqualsIgnContentType(SimpleResponse.of(200, "async op!"), router.route(request("/async")));
+    }
+
     private static void assertEqualsIgnContentType(SimpleResponse<String> expected, CompletionStage<Response<String>> actualStage) throws Exception {
         Response<String> actual = actualStage.toCompletableFuture().get();
         assertEquals(expected.getBody(), actual.getBody());
