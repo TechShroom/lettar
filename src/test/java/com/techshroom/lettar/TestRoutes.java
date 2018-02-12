@@ -24,6 +24,9 @@
  */
 package com.techshroom.lettar;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+
 import com.google.common.base.Throwables;
 import com.techshroom.lettar.annotation.NotFoundHandler;
 import com.techshroom.lettar.annotation.ServerErrorHandler;
@@ -79,6 +82,18 @@ public class TestRoutes {
     @BodyTypeBodyDecoder
     public Response<String> bodyType(Request<String> request) {
         return SimpleResponse.of(200, request.getBody());
+    }
+
+    @Path("/async")
+    public CompletionStage<Response<String>> asyncOp() {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            return SimpleResponse.of(200, "async op!");
+        });
     }
 
     @ServerErrorHandler

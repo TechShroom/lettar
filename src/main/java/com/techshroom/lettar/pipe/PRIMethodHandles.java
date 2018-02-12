@@ -25,12 +25,18 @@
 package com.techshroom.lettar.pipe;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.techshroom.lettar.reflect.MethodHandles2.safeFindStatic;
 import static java.lang.invoke.MethodHandles.dropArguments;
 import static java.lang.invoke.MethodHandles.filterArguments;
+import static java.lang.invoke.MethodHandles.filterReturnValue;
 import static java.lang.invoke.MethodHandles.insertArguments;
+import static java.lang.invoke.MethodHandles.lookup;
+import static java.lang.invoke.MethodType.methodType;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import com.techshroom.lettar.Request;
 import com.techshroom.lettar.Response;
@@ -39,13 +45,8 @@ import com.techshroom.lettar.reflect.StringConverters;
 
 class PRIMethodHandles {
 
-    private static void verifyResponseReturn(MethodType type, String name) {
-        checkArgument(Response.class.isAssignableFrom(type.returnType()),
-                "response return required (method %s%s)", name, type);
-    }
-
     public static MethodHandle errorHandlerTransform(MethodHandle base, String name) {
-        // need (LRequest;LException;)LResponse
+        // need (LRequest;LException;)LCompletionStage;
         MethodType originalType = base.type();
 
         base = injectParameter(base, 0, Request.class);
@@ -55,12 +56,13 @@ class PRIMethodHandles {
                 "Only a Request and Throwable are allowed as parameters (method %s%s)",
                 name, originalType);
 
-        verifyResponseReturn(base.type(), name);
+        base = adaptReturnType(base, name);
+
         return base;
     }
 
     public static MethodHandle notFoundHandlerTransform(MethodHandle base, String name) {
-        // need (LRequest;)LResponse;
+        // need (LRequest;)LCompletionStage;
         MethodType originalType = base.type();
 
         base = injectParameter(base, 0, Request.class);
@@ -69,12 +71,13 @@ class PRIMethodHandles {
                 "Only a Request is allowed as a parameter (method %s%s)",
                 name, originalType);
 
-        verifyResponseReturn(base.type(), name);
+        base = adaptReturnType(base, name);
+
         return base;
     }
 
     public static MethodHandle routeTransform(MethodHandle base, String name) {
-        // need (LRequest;LMimeType;[LObject;)LResponse;
+        // need (LRequest;LMimeType;[LObject;)LCompletionStage;
 
         base = injectParameter(base, 0, Request.class);
         base = injectParameter(base, 1, MimeType.class);
@@ -92,7 +95,8 @@ class PRIMethodHandles {
         // mix into Object[] loosely
         base = LooseSpreader.asLooseSpreader(base, 2);
 
-        verifyResponseReturn(base.type(), name);
+        base = adaptReturnType(base, name);
+
         return base;
     }
 
@@ -125,6 +129,21 @@ class PRIMethodHandles {
                 base = dropArguments(base, index, paramType);
         }
         return base;
+    }
+
+    private static final MethodHandle COMPLETED_FUTURE =
+            safeFindStatic(lookup(), CompletableFuture.class, "completedFuture", methodType(CompletableFuture.class, Object.class))
+                    .asType(methodType(CompletableFuture.class, Response.class));
+
+    private static MethodHandle adaptReturnType(MethodHandle base, String name) {
+        // adapt Response|CompletionStage -> CompletionStage
+        MethodType type = base.type();
+        if (CompletionStage.class.isAssignableFrom(type.returnType())) {
+            return base;
+        } else if (Response.class.isAssignableFrom(type.returnType())) {
+            return filterReturnValue(base, COMPLETED_FUTURE);
+        }
+        throw new IllegalStateException("response or future return required (method " + name + type + ")");
     }
 
 }

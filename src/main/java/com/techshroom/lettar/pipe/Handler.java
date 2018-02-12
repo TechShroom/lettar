@@ -24,8 +24,10 @@
  */
 package com.techshroom.lettar.pipe;
 
+import java.util.concurrent.CompletionStage;
+
 public interface Handler {
 
-    FlowingResponse handle(FlowingRequest request);
+    CompletionStage<FlowingResponse> handle(FlowingRequest request);
 
 }

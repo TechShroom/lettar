@@ -31,13 +31,13 @@ import static com.techshroom.lettar.reflect.MethodHandles2.safeUnreflect;
 import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 
 import org.slf4j.Logger;
 
 import com.google.common.collect.ImmutableList;
 import com.techshroom.lettar.BaseRouterInitializer;
-import com.techshroom.lettar.Logging;
 import com.techshroom.lettar.Request;
 import com.techshroom.lettar.Response;
 import com.techshroom.lettar.Router;
@@ -52,6 +52,7 @@ import com.techshroom.lettar.pipe.PipelineRouter.Builder;
 import com.techshroom.lettar.pipe.builtins.PathInputPipe;
 import com.techshroom.lettar.pipe.builtins.accept.AcceptPipe;
 import com.techshroom.lettar.pipe.impl.SimplePipeline;
+import com.techshroom.lettar.util.Logging;
 
 public class PipelineRouterInitializer extends BaseRouterInitializer<PipelineRouter.Builder> {
 
@@ -105,7 +106,7 @@ public class PipelineRouterInitializer extends BaseRouterInitializer<PipelineRou
             Request<Object> request = requestFromFlow(flowReq);
             Throwable err = flowReq.get(RequestKeys.error);
 
-            Response<Object> response = invokeHandleUnchecked(() -> {
+            CompletionStage<Response<Object>> response = invokeHandleUnchecked(() -> {
                 return call.invoke(request, err);
             });
 
@@ -120,7 +121,7 @@ public class PipelineRouterInitializer extends BaseRouterInitializer<PipelineRou
         return flowReq -> {
             Request<Object> request = requestFromFlow(flowReq);
 
-            Response<Object> response = invokeHandleUnchecked(() -> {
+            CompletionStage<Response<Object>> response = invokeHandleUnchecked(() -> {
                 return call.invoke(request);
             });
 
@@ -142,7 +143,7 @@ public class PipelineRouterInitializer extends BaseRouterInitializer<PipelineRou
             MimeType contentType = flowReq.get(AcceptPipe.contentType);
             checkState(contentType != null, "oh no, this shouldn't happen!");
 
-            Response<Object> response = invokeHandleUnchecked(() -> {
+            CompletionStage<Response<Object>> response = invokeHandleUnchecked(() -> {
                 return call.invoke(request, contentType, pathPartsArray);
             });
 
@@ -161,9 +162,9 @@ public class PipelineRouterInitializer extends BaseRouterInitializer<PipelineRou
         return request;
     }
 
-    private static FlowingResponse adaptResponse(Response<Object> response, FlowingRequest request) {
-        return BaseFlowingResponse.from(response.getStatusCode(), response.getBody(), response.getHeaders())
-                .with(ResponseKeys.request, request);
+    private static CompletionStage<FlowingResponse> adaptResponse(CompletionStage<Response<Object>> resStage, FlowingRequest request) {
+        return resStage.thenApply(response -> BaseFlowingResponse.from(response.getStatusCode(), response.getBody(), response.getHeaders())
+                .with(ResponseKeys.request, request));
     }
 
     private Pipeline pipeInheritorMap(InheritorMap map, Handler handler, InheritorContext ctx) {

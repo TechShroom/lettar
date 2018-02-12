@@ -25,6 +25,8 @@
 package com.techshroom.lettar;
 
 import java.util.Map;
+import java.util.OptionalInt;
+import java.util.function.UnaryOperator;
 
 import javax.annotation.Nullable;
 
@@ -61,6 +63,12 @@ public abstract class SimpleResponse<B> implements Response<B> {
             return headers(HttpMultimap.copyOf(headers));
         }
 
+        HttpMultimap getHeaders();
+
+        default Builder<B> modifyHeaders(UnaryOperator<HttpMultimap> mod) {
+            return headers(mod.apply(getHeaders()));
+        }
+
         Builder<B> body(@Nullable B body);
 
         Builder<B> statusCode(int code);
@@ -71,6 +79,12 @@ public abstract class SimpleResponse<B> implements Response<B> {
 
         default Builder<B> noContent_201() {
             return statusCode(201);
+        }
+
+        OptionalInt getStatusCode();
+
+        default Builder<B> statusCodeIfUnset(int code) {
+            return statusCode(getStatusCode().orElse(code));
         }
 
         SimpleResponse<B> build();

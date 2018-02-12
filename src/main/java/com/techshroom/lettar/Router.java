@@ -24,11 +24,13 @@
  */
 package com.techshroom.lettar;
 
+import java.util.concurrent.CompletionStage;
+
 /**
  * Routes a request, and returns a response.
  */
 public interface Router<IB, OB> {
 
-    Response<OB> route(Request<IB> request);
+    CompletionStage<Response<OB>> route(Request<IB> request);
 
 }
