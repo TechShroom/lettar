@@ -26,7 +26,6 @@ package com.techshroom.lettar.addons.sse;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
@@ -34,6 +33,7 @@ import java.util.function.Supplier;
 import com.google.common.base.Splitter;
 import com.techshroom.lettar.Response;
 import com.techshroom.lettar.SimpleResponse;
+import com.techshroom.lettar.addons.sse.SseInputStream.SseOutput;
 
 public class BaseSseEmitter implements SseEmitter {
 
@@ -41,6 +41,7 @@ public class BaseSseEmitter implements SseEmitter {
 
     private final CompletableFuture<Response<InputStream>> stage;
     private final SseInputStream stream = new SseInputStream();
+    private final SseOutput output = stream.getOutput();
 
     public BaseSseEmitter(Supplier<SimpleResponse.Builder<InputStream>> responseBuilder) {
         SimpleResponse<InputStream> response = responseBuilder.get()
@@ -55,38 +56,34 @@ public class BaseSseEmitter implements SseEmitter {
 
     @Override
     public void emit(ServerSentEvent event) {
-        try {
-            if (event.getComment().isPresent()) {
-                for (String commentLine : LINE_SPLITTER.split(event.getComment().get())) {
-                    stream.write(": ");
-                    stream.write(commentLine);
-                    stream.write('\n');
-                }
+        if (event.getComment().isPresent()) {
+            for (String commentLine : LINE_SPLITTER.split(event.getComment().get())) {
+                output.write(": ");
+                output.write(commentLine);
+                output.write('\n');
             }
-            if (event.getName().isPresent()) {
-                stream.write("event: ");
-                stream.write(event.getName().get());
-                stream.write('\n');
-            }
-            if (event.getId().isPresent()) {
-                stream.write("id: ");
-                stream.write(event.getId().get());
-                stream.write('\n');
-            }
-            if (event.getData().isPresent()) {
-                for (String dataLine : LINE_SPLITTER.split(event.getData().get())) {
-                    stream.write("data: ");
-                    stream.write(dataLine);
-                    stream.write('\n');
-                }
-            }
-            // ends the event
-            stream.write('\n');
-
-            stream.flush();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
         }
+        if (event.getName().isPresent()) {
+            output.write("event: ");
+            output.write(event.getName().get());
+            output.write('\n');
+        }
+        if (event.getId().isPresent()) {
+            output.write("id: ");
+            output.write(event.getId().get());
+            output.write('\n');
+        }
+        if (event.getData().isPresent()) {
+            for (String dataLine : LINE_SPLITTER.split(event.getData().get())) {
+                output.write("data: ");
+                output.write(dataLine);
+                output.write('\n');
+            }
+        }
+        // ends the event
+        output.write('\n');
+
+        output.flush();
     }
 
     @Override
@@ -96,7 +93,7 @@ public class BaseSseEmitter implements SseEmitter {
 
     @Override
     public void close() throws IOException {
-        stream.close();
+        output.close();
     }
 
     @Override

@@ -26,64 +26,98 @@ package com.techshroom.lettar.addons.sse;
 
 import static com.google.common.base.Preconditions.checkState;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import com.techshroom.lettar.util.ExposedBAOS;
-
 public class SseInputStream extends InputStream {
 
-    private ExposedBAOS buffer = new ExposedBAOS();
-    private int index = 0;
-    private final Lock lock = new ReentrantLock();
-    private final Condition dataReady = lock.newCondition();
-    private int resetAtThisIndex = -1;
-    private int eofAtThisIndex = -1;
+    public static class SseOutput {
 
-    public void write(String data) {
-        lock.lock();
-        try {
-            checkOpen();
-            buffer.write(data.getBytes(StandardCharsets.UTF_8));
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        } finally {
-            lock.unlock();
+        private final SseInputStream stream;
+        private final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+
+        private SseOutput(SseInputStream stream) {
+            this.stream = stream;
         }
+
+        public void write(String data) {
+            stream.lock.lock();
+            try {
+                checkOpen();
+                byte[] bytes = data.getBytes(StandardCharsets.UTF_8);
+                buffer.write(bytes, 0, bytes.length);
+            } finally {
+                stream.lock.unlock();
+            }
+        }
+
+        public void write(char data) {
+            stream.lock.lock();
+            try {
+                checkOpen();
+                // for UTF-8, single characters are encoded already
+                // obviously this doesn't work with surrogate pairs
+                // but that's fine
+                buffer.write(data);
+            } finally {
+                stream.lock.unlock();
+            }
+        }
+
+        public void flush() {
+            try {
+                stream.packets.put(buffer.toByteArray());
+                buffer.reset();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                // we shouldn't ever block here -- queue is infinite
+                throw new IllegalStateException(e);
+            }
+        }
+
+        private void checkOpen() {
+            checkState(!stream.closed, "closed");
+        }
+
+        public void close() {
+            stream.lock.lock();
+            try {
+                flush();
+                stream.close();
+            } finally {
+                stream.lock.unlock();
+            }
+        }
+
     }
 
-    public void write(char data) {
-        lock.lock();
-        try {
-            checkOpen();
-            // for UTF-8, single characters are encoded already
-            // obviously this doesn't work with surrogate pairs, but that's fine
-            buffer.write(data);
-        } finally {
-            lock.unlock();
-        }
+    private final BlockingQueue<byte[]> packets = new LinkedBlockingQueue<>();
+    private byte[] current;
+    private int index;
+    private final SseOutput output = new SseOutput(this);
+    private final Lock lock = new ReentrantLock();
+    private boolean closed;
+
+    public SseOutput getOutput() {
+        return output;
     }
 
     @Override
     public int read() throws IOException {
-        lock.lock();
-        try {
-            if (!ensureDataAvailable()) {
-                return -1;
-            }
-            int data = buffer.getBuf()[index];
-            index++;
-            updateStreamState();
-            return data;
-        } finally {
-            lock.unlock();
+        byte[] next = ensureDataAvailable(true);
+        if (next == null) {
+            return -1;
         }
+        int data = next[index];
+        index++;
+        return data;
     }
 
     // read(byte[]) delegates to this
@@ -97,104 +131,62 @@ public class SseInputStream extends InputStream {
             return 0;
         }
 
+        byte[] next = ensureDataAvailable(true);
+        if (next == null) {
+            return -1;
+        }
+        int numRead = Math.min(next.length - index, len);
+        System.arraycopy(next, index, b, off, numRead);
+        index += numRead;
+        return numRead;
+    }
+
+    private byte[] ensureDataAvailable(boolean wait) throws IOException {
+        if (current != null && index >= current.length) {
+            current = null;
+            index = 0;
+        }
+        while (current == null && morePacketsComing()) {
+            if (wait) {
+                try {
+                    current = packets.poll(1, TimeUnit.MILLISECONDS);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException(e);
+                }
+            } else {
+                current = packets.poll();
+            }
+        }
+        return current;
+    }
+
+    private boolean morePacketsComing() {
         lock.lock();
         try {
-            if (!ensureDataAvailable()) {
-                return -1;
-            }
-            int available = rawAvailable();
-            int numRead = Math.min(available, len);
-            System.arraycopy(buffer.getBuf(), index, b, off, numRead);
-            index += numRead;
-            updateStreamState();
-            return numRead;
+            return !closed || packets.size() > 0;
         } finally {
             lock.unlock();
-        }
-    }
-
-    private boolean ensureDataAvailable() throws IOException {
-        while (buffer != null && rawAvailable() == 0) {
-            try {
-                // wait for a small maximum
-                // this ensures that if flush isn't called
-                // we still read the data in a reasonable time
-                dataReady.await(1, TimeUnit.MILLISECONDS);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new IOException("thread interrupted", e);
-            }
-        }
-        return buffer != null;
-    }
-
-    private void updateStreamState() {
-        if (eofAtThisIndex != -1 && index >= eofAtThisIndex) {
-            buffer = null;
-            return;
-        }
-        if (resetAtThisIndex != -1 && index >= resetAtThisIndex) {
-            int len = rawAvailable();
-            buffer.reset();
-            buffer.write(buffer.getBuf(), index, len);
-            index = 0;
-            resetAtThisIndex = -1;
         }
     }
 
     @Override
     public int available() throws IOException {
-        lock.lock();
-        try {
-            if (buffer == null) {
-                return 0;
-            }
-            return rawAvailable();
-        } finally {
-            lock.unlock();
+        byte[] data = ensureDataAvailable(false);
+        if (data == null) {
+            // none immediately available
+            return 0;
         }
+        return data.length - index;
     }
 
-    private int rawAvailable() {
-        return buffer.getCount() - index;
-    }
-
-    public void flush() throws IOException {
-        lock.lock();
-        try {
-            checkOpen();
-            resetAtThisIndex = buffer.getCount();
-            dataReady.signal();
-        } finally {
-            lock.unlock();
-        }
-    }
-
-    private void checkOpen() {
-        checkState(rawIsOpen(), "closed");
-    }
-
-    private boolean rawIsOpen() {
-        return eofAtThisIndex == -1 && buffer != null;
-    }
-    
     public boolean isOpen() {
-        lock.lock();
-        try {
-            return rawIsOpen();
-        } finally {
-            lock.unlock();
-        }
+        return !closed;
     }
 
     @Override
-    public void close() throws IOException {
-        lock.lock();
-        try {
-            eofAtThisIndex = buffer.getCount();
-        } finally {
-            lock.unlock();
-        }
+    public void close() {
+        closed = true;
     }
 
 }

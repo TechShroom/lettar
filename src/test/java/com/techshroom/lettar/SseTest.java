@@ -24,7 +24,7 @@
  */
 package com.techshroom.lettar;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
