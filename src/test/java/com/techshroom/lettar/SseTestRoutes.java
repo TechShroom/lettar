@@ -25,9 +25,7 @@
 package com.techshroom.lettar;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletionStage;
 
@@ -46,11 +44,7 @@ public class SseTestRoutes {
         Thread t = new Thread(() -> {
             emitter.emit(ServerSentEvent.of("test", "1", "event 1"));
             emitter.emit(ServerSentEvent.of("test", "2", "event 2"));
-            try {
-                emitter.close();
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
+            emitter.close();
         }, "emitter");
         t.start();
         return emitter.getResponseStage();

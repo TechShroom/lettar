@@ -24,18 +24,28 @@
  */
 package com.techshroom.lettar.addons.sse;
 
-import java.io.Closeable;
 import java.io.InputStream;
 import java.util.concurrent.CompletionStage;
 
 import com.techshroom.lettar.Response;
 
-public interface SseEmitter extends Closeable {
+public interface SseEmitter extends AutoCloseable {
 
-    void emit(ServerSentEvent event);
+    /**
+     * Emits an event. Returns {@code false} if the stream has been closed and
+     * the event couldn't be delivered.
+     * 
+     * @param event
+     *            - the event to send
+     * @return if the emitter is open
+     */
+    boolean emit(ServerSentEvent event);
 
     CompletionStage<Response<InputStream>> getResponseStage();
 
     boolean isOpen();
+
+    @Override
+    void close();
 
 }

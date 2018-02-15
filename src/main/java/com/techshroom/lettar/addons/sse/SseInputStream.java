@@ -96,6 +96,14 @@ public class SseInputStream extends InputStream {
             }
         }
 
+        public void lock() {
+            stream.lock.lock();
+        }
+
+        public void unlock() {
+            stream.lock.unlock();
+        }
+
     }
 
     private final BlockingQueue<byte[]> packets = new LinkedBlockingQueue<>();
@@ -181,12 +189,22 @@ public class SseInputStream extends InputStream {
     }
 
     public boolean isOpen() {
-        return !closed;
+        lock.lock();
+        try {
+            return !closed;
+        } finally {
+            lock.unlock();
+        }
     }
 
     @Override
     public void close() {
-        closed = true;
+        lock.lock();
+        try {
+            closed = true;
+        } finally {
+            lock.unlock();
+        }
     }
 
 }
