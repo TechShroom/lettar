@@ -1,64 +1,28 @@
-buildscript {
-    repositories {
-        mavenCentral()
-        maven {
-            url "https://oss.sonatype.org/content/repositories/snapshots/"
-        }
-        maven {
-            url "https://plugins.gradle.org/m2/"
-        }
-    }
-
-    configurations.all {
-        resolutionStrategy {
-            cacheChangingModulesFor 0, 'seconds'
-        }
-    }
-    dependencies {
-        classpath group: 'com.techshroom', name: 'Aversion', version: '3.0.1'
-    }
-}
 plugins {
-    id "com.github.hierynomus.license" version "0.14.0"
+    id "com.techshroom.incise-blue" version "0.0.4"
  	id "net.researchgate.release" version "2.6.0"
 }
 
-apply plugin: 'java'
-apply plugin: 'eclipse'
-apply plugin: 'aversion-util'
-apply plugin: 'aversion-apt'
-apply plugin: 'aversion-maven'
+apply plugin: 'java-library'
 
-license {
-    ext {
-        name = rootProject.name
-        organization = rootProject.organization
-        url = rootProject.url
+inciseBlue {
+    plugins {
+        apt()
+        util()
+        maven()
+        license()
     }
-    header = rootProject.file('HEADER.txt')
-    ignoreFailures = false
-    strictCheck = true
-    include '**/*.java'
-    mapping {
-        java = 'SLASHSTAR_STYLE'
+
+    util {
+        javaVersion = '1.8'
     }
-}
 
-util {
-    javaVersion = '1.8'
-}
-
-mavencfg {
-    coords 'TechShroom', 'lettar'
-    description 'Routing library for Java'
-}
-
-repositories {
-    mavenCentral()
     maven {
-        url "https://oss.sonatype.org/content/repositories/snapshots/"
+        coords 'TechShroom', 'lettar'
+        description 'Routing library for Java'
     }
 }
+
 configurations.all {
    resolutionStrategy {
      // fail eagerly on version conflict (includes transitive dependencies)
@@ -66,7 +30,7 @@ configurations.all {
      failOnVersionConflict()
 
      // force certain versions of dependencies (including transitive)
-    force 'com.google.guava:guava:23.6-jre', 'com.google.code.findbugs:jsr305:3.0.1'
+     force 'com.google.guava:guava:' + guavaVersion, 'com.google.code.findbugs:jsr305:3.0.1'
 
      cacheDynamicVersionsFor 10, 'minutes'
      // don't cache changing modules at all
@@ -75,39 +39,14 @@ configurations.all {
 }
 
 dependencies {
-    compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'
+    api group: 'com.techshroom', name: 'jsr305-plus', version: '0.0.1'
+    api group: 'com.google.guava', name: 'guava', version: project.guavaVersion
+    implementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'
 
-    compile group: 'com.techshroom', name: 'jsr305-plus', version: '0.0.1'
+    aptCompileOnly group: 'com.google.auto.service', name: 'auto-service', version: '1.0-rc4'
+    aptCompileOnly group: 'com.google.auto.value', name: 'auto-value', version: '1.5.4'
 
-    addAPTReqWComp group: 'com.google.guava', name: 'guava', version: '23.6-jre'
-    addAPT group: 'com.google.auto.service', name: 'auto-service', version: '1.0-rc3'
-    addAPT group: 'com.google.auto.value', name: 'auto-value', version: '1.5.3'
-    addAPTReq name: 'aopalliance'
-    addAPTReq name: 'asm'
-    addAPTReq name: 'auto-value'
-    addAPTReq name: 'auto-common'
-    addAPTReq name: 'cglib'
-    addAPTReq name: 'commons-collections'
-    addAPTReq name: 'commons-lang'
-    addAPTReq name: 'dagger'
-    addAPTReq name: 'javawriter'
-    addAPTReq name: 'javax.inject'
-    addAPTReq name: 'velocity'
-
-    testCompile group: 'junit', name: 'junit', version: '4.12'
-    testCompile group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3'
-    testCompile group: 'ch.qos.logback', name: 'logback-core', version: '1.2.3'
-
-}
-
-javadoc {
-    options.addStringOption('Xdoclint:none', '-quiet')
-}
-
-configure([compileJava, compileTestJava]) {
-    options.compilerArgs += ['-Xlint:all', '-Xlint:-processing', '-Xlint:-path']
-    options.deprecation = true
-    options.encoding = 'UTF-8'
-    options.incremental = true
-    options.fork = true
+    testImplementation group: 'junit', name: 'junit', version: '4.12'
+    testImplementation group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3'
+    testImplementation group: 'ch.qos.logback', name: 'logback-core', version: '1.2.3'
 }
