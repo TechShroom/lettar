@@ -1,5 +1,5 @@
 plugins {
-    id "com.techshroom.incise-blue" version "0.0.4"
+    id "com.techshroom.incise-blue" version "0.0.5"
  	id "net.researchgate.release" version "2.6.0"
 }
 
@@ -7,10 +7,10 @@ apply plugin: 'java-library'
 
 inciseBlue {
     plugins {
-        apt()
-        util()
-        maven()
-        license()
+        apt
+        util
+        maven
+        license
     }
 
     util {
