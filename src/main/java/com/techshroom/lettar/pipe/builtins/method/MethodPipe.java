@@ -24,11 +24,11 @@
  */
 package com.techshroom.lettar.pipe.builtins.method;
 
-import com.techshroom.lettar.pipe.FilteringPipe;
+import com.techshroom.lettar.pipe.FilterPipe;
 import com.techshroom.lettar.pipe.FlowingRequest;
 import com.techshroom.lettar.routing.HttpMethodPredicate;
 
-public class MethodPipe implements FilteringPipe {
+public class MethodPipe implements FilterPipe {
 
     public static MethodPipe create(HttpMethodPredicate methodMatcher) {
         return new MethodPipe(methodMatcher);
@@ -41,7 +41,7 @@ public class MethodPipe implements FilteringPipe {
     }
 
     @Override
-    public boolean filter(FlowingRequest request) {
+    public boolean accepts(FlowingRequest request) {
         return methodMatcher.matches(request.getMethod());
     }
 

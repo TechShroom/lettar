@@ -24,59 +24,67 @@
  */
 package com.techshroom.lettar.pipe.builtins.accept;
 
-import static com.google.common.collect.ImmutableList.toImmutableList;
-
-import java.util.List;
-import java.util.Optional;
-
-import javax.annotation.Nullable;
-
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Streams;
 import com.techshroom.lettar.mime.AcceptMime;
 import com.techshroom.lettar.mime.MimeType;
 import com.techshroom.lettar.pipe.BiPipe;
+import com.techshroom.lettar.pipe.FilterPipe;
 import com.techshroom.lettar.pipe.FlowingRequest;
 import com.techshroom.lettar.pipe.FlowingResponse;
 import com.techshroom.lettar.pipe.Key;
 import com.techshroom.lettar.pipe.ResponseKeys;
 
-public class AcceptPipe implements BiPipe {
+import javax.annotation.Nullable;
+import java.util.List;
+import java.util.Optional;
+
+import static com.google.common.base.Preconditions.checkState;
+
+public class AcceptPipe implements FilterPipe, BiPipe {
 
     // Limit number of splits to prevent attacks -- there shouldn't be this many
     private static final Splitter ACCEPT_SPLITTER = Splitter.on(',').limit(50);
     public static final Key<MimeType> contentType = Key.of("Request.contentType");
 
     public static AcceptPipe create(Iterable<MimeType> providedTypes, @Nullable MimeType defaultType) {
-        return new AcceptPipe(ImmutableList.copyOf(providedTypes), Optional.ofNullable(defaultType));
+        return new AcceptPipe(ImmutableList.copyOf(providedTypes), defaultType);
     }
 
     private final ImmutableList<MimeType> providedTypes;
-    private final Optional<MimeType> defaultType;
+    private final @Nullable MimeType defaultType;
 
-    private AcceptPipe(ImmutableList<MimeType> providedTypes, Optional<MimeType> defaultType) {
+    private AcceptPipe(ImmutableList<MimeType> providedTypes, MimeType defaultType) {
         this.providedTypes = providedTypes;
         this.defaultType = defaultType;
     }
 
-    @Override
-    public FlowingRequest pipeIn(FlowingRequest request) {
+    private Optional<MimeType> getAcceptedMimeType(FlowingRequest request) {
         String accept = request.getHeaders().getSingleValueOrDefault("accept", "*/*");
         List<MimeType> acceptTypes = getAcceptTypes(accept);
-        Optional<MimeType> accepted = negotiateContentType(acceptTypes, providedTypes);
-        if (!accepted.isPresent()) {
-            return null;
-        }
+        return negotiateContentType(acceptTypes, providedTypes);
+    }
+
+    @Override
+    public FlowingRequest pipeIn(FlowingRequest request) {
+        Optional<MimeType> accepted = getAcceptedMimeType(request);
+        checkState(accepted.isPresent(), "Request accepted that did not match: %s", request);
         return request.with(contentType, accepted.get());
     }
 
+    @Override
+    public boolean accepts(FlowingRequest request) {
+        return getAcceptedMimeType(request).isPresent();
+    }
+
     private List<MimeType> getAcceptTypes(String accept) {
-        return Streams.stream(ACCEPT_SPLITTER.split(accept))
+        return ImmutableList.copyOf(
+            ImmutableList.copyOf(ACCEPT_SPLITTER.split(accept)).stream()
                 .map(AcceptMime::parse)
                 .sorted()
                 .map(AcceptMime::getMimeType)
-                .collect(toImmutableList());
+                .iterator()
+        );
     }
 
     private Optional<MimeType> negotiateContentType(List<MimeType> acceptedTypes, List<MimeType> providedTypes) {
@@ -87,7 +95,7 @@ public class AcceptPipe implements BiPipe {
                 }
             }
         }
-        return defaultType;
+        return Optional.ofNullable(defaultType);
     }
 
     @Override

@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Optional;
 
 import com.google.common.collect.ImmutableList;
+import com.techshroom.lettar.pipe.FilterPipe;
 import com.techshroom.lettar.pipe.FlowingRequest;
 import com.techshroom.lettar.pipe.InputPipe;
 import com.techshroom.lettar.pipe.Key;
@@ -35,7 +36,9 @@ import com.techshroom.lettar.pipe.RequestKeys;
 import com.techshroom.lettar.routing.PathRoutePredicate;
 import com.techshroom.lettar.routing.PathRoutePredicate.MatchResult;
 
-public class PathPipe implements InputPipe {
+import static com.google.common.base.Preconditions.checkState;
+
+public class PathPipe implements FilterPipe, InputPipe {
 
     public static final Key<ImmutableList<String>> parts = RequestKeys.path.child("parts");
 
@@ -45,21 +48,28 @@ public class PathPipe implements InputPipe {
 
     private final ImmutableList<PathRoutePredicate> pathMatcher;
 
+    private Optional<MatchResult> getMatchResult(FlowingRequest request) {
+        List<String> path = request.getPath();
+        return pathMatcher.stream()
+            .map(p -> p.matches(path))
+            .filter(MatchResult::isSuccessfulMatch)
+            .findAny();
+    }
+
     private PathPipe(ImmutableList<PathRoutePredicate> pathMatcher) {
         this.pathMatcher = pathMatcher;
     }
 
     @Override
     public FlowingRequest pipeIn(FlowingRequest request) {
-        List<String> path = request.getPath();
-        Optional<MatchResult> match = pathMatcher.stream()
-                .map(p -> p.matches(path))
-                .filter(MatchResult::isSuccessfulMatch)
-                .findAny();
-        if (!match.isPresent()) {
-            return null;
-        }
+        Optional<MatchResult> match = getMatchResult(request);
+        checkState(match.isPresent(), "Request accepted that did not match: %s", request);
         return request.with(parts, match.get().getParts());
+    }
+
+    @Override
+    public boolean accepts(FlowingRequest request) {
+        return getMatchResult(request).isPresent();
     }
 
     @Override

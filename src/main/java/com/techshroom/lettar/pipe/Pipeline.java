@@ -32,6 +32,8 @@ import com.google.common.collect.ImmutableList;
 
 public interface Pipeline {
 
+    ImmutableList<FilterPipe> getFilterPipes();
+
     ImmutableList<InputPipe> getInputPipes();
 
     Handler getHandler();

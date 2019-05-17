@@ -24,12 +24,8 @@
  */
 package com.techshroom.lettar.pipe.impl;
 
-import java.util.List;
-import java.util.concurrent.CompletionStage;
-
-import org.slf4j.Logger;
-
 import com.google.common.collect.ImmutableList;
+import com.techshroom.lettar.pipe.FilterPipe;
 import com.techshroom.lettar.pipe.FlowingRequest;
 import com.techshroom.lettar.pipe.FlowingResponse;
 import com.techshroom.lettar.pipe.Handler;
@@ -37,6 +33,12 @@ import com.techshroom.lettar.pipe.InputPipe;
 import com.techshroom.lettar.pipe.OutputPipe;
 import com.techshroom.lettar.pipe.Pipeline;
 import com.techshroom.lettar.util.Logging;
+import org.slf4j.Logger;
+
+import java.util.List;
+import java.util.concurrent.CompletionStage;
+
+import static com.google.common.base.Preconditions.checkState;
 
 public class SimplePipeline implements Pipeline {
 
@@ -45,22 +47,34 @@ public class SimplePipeline implements Pipeline {
     // TODO if we want performance, this could _easily_ be redone with
     // MethodHandles
 
-    public static SimplePipeline create(List<InputPipe> inputPipes,
-            Handler handler,
-            List<OutputPipe> outputPipes) {
-        return new SimplePipeline(ImmutableList.copyOf(inputPipes), handler, ImmutableList.copyOf(outputPipes));
+    public static SimplePipeline create(List<FilterPipe> filterPipes,
+                                        List<InputPipe> inputPipes,
+                                        Handler handler,
+                                        List<OutputPipe> outputPipes) {
+        return new SimplePipeline(ImmutableList.copyOf(filterPipes),
+            ImmutableList.copyOf(inputPipes),
+            handler,
+            ImmutableList.copyOf(outputPipes));
     }
 
+    private final ImmutableList<FilterPipe> filterPipes;
     private final ImmutableList<InputPipe> inputPipes;
     private final Handler handler;
     private final ImmutableList<OutputPipe> outputPipes;
 
-    private SimplePipeline(ImmutableList<InputPipe> inputPipes,
-            Handler handler,
-            ImmutableList<OutputPipe> outputPipes) {
+    private SimplePipeline(ImmutableList<FilterPipe> filterPipes,
+                           ImmutableList<InputPipe> inputPipes,
+                           Handler handler,
+                           ImmutableList<OutputPipe> outputPipes) {
+        this.filterPipes = filterPipes;
         this.inputPipes = inputPipes;
         this.handler = handler;
         this.outputPipes = outputPipes;
+    }
+
+    @Override
+    public ImmutableList<FilterPipe> getFilterPipes() {
+        return filterPipes;
     }
 
     @Override
@@ -85,24 +99,27 @@ public class SimplePipeline implements Pipeline {
             return null;
         }
         return getHandler().handle(inputPiped)
-                .thenApplyAsync(this::pipeOutput);
+            .thenApplyAsync(this::pipeOutput);
     }
 
     private FlowingRequest pipeInput(FlowingRequest request) {
-        FlowingRequest piping = request;
-        for (InputPipe pipe : getInputPipes()) {
-            piping = pipe.pipeIn(piping);
-            if (piping == null) {
-                LOGGER.debug("{}: overflowed in pipe {}", request, pipe);
+        for (FilterPipe filter : getFilterPipes()) {
+            if (!filter.accepts(request)) {
+                LOGGER.debug("{}: overflowed in pipe {}", request, filter);
                 return null;
             }
         }
-        return piping;
+        for (InputPipe pipe : getInputPipes()) {
+            request = pipe.pipeIn(request);
+            checkState(request != null, "Null request piped from %s", pipe);
+        }
+        return request;
     }
 
     private FlowingResponse pipeOutput(FlowingResponse response) {
         for (OutputPipe pipe : getOutputPipes()) {
             response = pipe.pipeOut(response);
+            checkState(response != null, "Null response piped from %s", pipe);
         }
         return response;
     }

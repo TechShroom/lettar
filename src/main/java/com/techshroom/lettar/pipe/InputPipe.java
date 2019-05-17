@@ -24,19 +24,15 @@
  */
 package com.techshroom.lettar.pipe;
 
-import javax.annotation.Nullable;
-
 public interface InputPipe extends Pipe {
 
     /**
-     * Pipe a request through, or overflow and return {@code null}.
-     * 
+     * Pipe a request through.
+     *
      * @param request
      *            - the incoming request
-     * @return the request to continue piping, or {@code null} to invoke
-     *         overflow
+     * @return the request to continue piping
      */
-    @Nullable
     FlowingRequest pipeIn(FlowingRequest request);
 
 }

@@ -22,39 +22,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.techshroom.lettar.pipe.builtins;
+package com.techshroom.lettar.pipe;
 
-import java.util.List;
+public interface FilterPipe extends Pipe {
 
-import com.google.common.collect.ImmutableList;
-import com.techshroom.lettar.pipe.FlowingRequest;
-import com.techshroom.lettar.pipe.InputPipe;
-import com.techshroom.lettar.pipe.Key;
-import com.techshroom.lettar.pipe.RequestKeys;
-import com.techshroom.lettar.routing.PathRoutePredicate;
-import com.techshroom.lettar.routing.PathRoutePredicate.MatchResult;
+    /**
+     * Determine if this request should continue or not.
+     *
+     * @param request - the request
+     * @return {@code true} if the request should continue down this pipe
+     */
+    boolean accepts(FlowingRequest request);
 
-public class PathInputPipe implements InputPipe {
-
-    public static final Key<ImmutableList<String>> parts = RequestKeys.path.child("parts");
-
-    public static PathInputPipe create(PathRoutePredicate pathMatcher) {
-        return new PathInputPipe(pathMatcher);
-    }
-
-    private final PathRoutePredicate pathMatcher;
-
-    private PathInputPipe(PathRoutePredicate pathMatcher) {
-        this.pathMatcher = pathMatcher;
-    }
-
-    @Override
-    public FlowingRequest pipeIn(FlowingRequest request) {
-        List<String> path = request.getPath();
-        MatchResult match = pathMatcher.matches(path);
-        if (!match.isSuccessfulMatch()) {
-            return null;
-        }
-        return request.with(parts, match.getParts());
-    }
 }

@@ -65,7 +65,7 @@ class AssetCacher {
             lock.lock();
             try {
                 if (!cached.contains(key)) {
-                    storeInCache(resource, assetKey);
+                    storeInCache(resource, key);
                     cached.add(key);
                 }
             } finally {

@@ -24,18 +24,6 @@
  */
 package com.techshroom.lettar.pipe;
 
-import static com.google.common.base.Preconditions.checkState;
-import static com.techshroom.lettar.reflect.MethodHandles2.invokeHandleUnchecked;
-import static com.techshroom.lettar.reflect.MethodHandles2.safeUnreflect;
-
-import java.lang.invoke.MethodHandle;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.util.concurrent.CompletionStage;
-import java.util.function.Consumer;
-
-import org.slf4j.Logger;
-
 import com.google.common.collect.ImmutableList;
 import com.techshroom.lettar.BaseRouterInitializer;
 import com.techshroom.lettar.Request;
@@ -49,10 +37,21 @@ import com.techshroom.lettar.inheiritor.InheritorContext;
 import com.techshroom.lettar.inheiritor.InheritorMap;
 import com.techshroom.lettar.mime.MimeType;
 import com.techshroom.lettar.pipe.PipelineRouter.Builder;
-import com.techshroom.lettar.pipe.builtins.PathInputPipe;
 import com.techshroom.lettar.pipe.builtins.accept.AcceptPipe;
+import com.techshroom.lettar.pipe.builtins.path.PathPipe;
 import com.techshroom.lettar.pipe.impl.SimplePipeline;
 import com.techshroom.lettar.util.Logging;
+import org.slf4j.Logger;
+
+import java.lang.invoke.MethodHandle;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Consumer;
+
+import static com.google.common.base.Preconditions.checkState;
+import static com.techshroom.lettar.reflect.MethodHandles2.invokeHandleUnchecked;
+import static com.techshroom.lettar.reflect.MethodHandles2.safeUnreflect;
 
 public class PipelineRouterInitializer extends BaseRouterInitializer<PipelineRouter.Builder> {
 
@@ -137,7 +136,7 @@ public class PipelineRouterInitializer extends BaseRouterInitializer<PipelineRou
         return flowReq -> {
             Request<Object> request = requestFromFlow(flowReq);
 
-            ImmutableList<String> pathParts = flowReq.get(PathInputPipe.parts);
+            ImmutableList<String> pathParts = flowReq.get(PathPipe.parts);
             Object[] pathPartsArray = (pathParts == null ? ImmutableList.of() : pathParts).toArray();
 
             MimeType contentType = flowReq.get(AcceptPipe.contentType);
@@ -168,21 +167,32 @@ public class PipelineRouterInitializer extends BaseRouterInitializer<PipelineRou
     }
 
     private Pipeline pipeInheritorMap(InheritorMap map, Handler handler, InheritorContext ctx) {
+        ImmutableList.Builder<FilterPipe> filterPipes = ImmutableList.builder();
         ImmutableList.Builder<InputPipe> inPipes = ImmutableList.builder();
         ImmutableList.Builder<OutputPipe> outPipes = ImmutableList.builder();
         for (InheritorMap.Entry entry : map) {
             Pipe pipe = entry.getInheritor().createPipe(entry.getOpaqueObject(), ctx);
+            boolean added = false;
+            if (pipe instanceof FilterPipe) {
+                filterPipes.add((FilterPipe) pipe);
+                added = true;
+            }
             if (pipe instanceof InputPipe) {
                 inPipes.add((InputPipe) pipe);
+                added = true;
             }
             if (pipe instanceof OutputPipe) {
                 outPipes.add((OutputPipe) pipe);
+                added = true;
             }
+
+            checkState(added, "Pipe not added to any list: %s", pipe);
         }
+        ImmutableList<FilterPipe> filter = filterPipes.build();
         ImmutableList<InputPipe> in = inPipes.build();
         ImmutableList<OutputPipe> out = outPipes.build();
-        LOGGER.debug("New pipeline: in={}, out={}", in, out);
-        return SimplePipeline.create(in, handler, out);
+        LOGGER.debug("New pipeline: filter={}, in={}, out={}", filter, in, out);
+        return SimplePipeline.create(filter, in, handler, out);
     }
 
 }
