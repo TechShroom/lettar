@@ -26,6 +26,7 @@ package com.techshroom.lettar.pipe;
 
 import java.util.List;
 
+import com.google.common.collect.ImmutableListMultimap;
 import com.techshroom.lettar.collections.HttpMultimap;
 import com.techshroom.lettar.routing.HttpMethod;
 
@@ -39,7 +40,7 @@ public interface FlowingRequest extends FlowingElement<FlowingRequest> {
         return get(RequestKeys.path);
     }
 
-    default HttpMultimap getQueryParts() {
+    default ImmutableListMultimap<String, String> getQueryParts() {
         return get(RequestKeys.queryParts);
     }
 

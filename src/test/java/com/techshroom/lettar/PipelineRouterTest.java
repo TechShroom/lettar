@@ -24,14 +24,13 @@
  */
 package com.techshroom.lettar;
 
-import org.junit.Before;
-import org.junit.Test;
-
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
-import com.techshroom.lettar.collections.HttpMultimap;
 import com.techshroom.lettar.pipe.PipelineRouterInitializer;
 import com.techshroom.lettar.routing.HttpMethod;
+import org.junit.Before;
+import org.junit.Test;
 
 public class PipelineRouterTest extends AbstractRouterTest {
 
@@ -66,9 +65,9 @@ public class PipelineRouterTest extends AbstractRouterTest {
     @Test
     public void testQueryRoutes() throws Exception {
         assertRespEqualsIgnContentType(SimpleResponse.of(200, "Queried 'index' Page"), router.route(request("/query",
-                HttpMultimap.copyOf(ImmutableMap.of("page", "index")))));
+                ImmutableListMultimap.of("page", "index"))));
         assertRespEqualsIgnContentType(SimpleResponse.of(200, "Queried 'action' Page"), router.route(request("/query",
-                HttpMultimap.copyOf(ImmutableMap.of("page", "action", "action", "foobar")))));
+                ImmutableListMultimap.of("page", "action", "action", "foobar"))));
     }
 
     @Test

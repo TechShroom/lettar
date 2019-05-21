@@ -24,6 +24,12 @@
  */
 package com.techshroom.lettar.addons.assets;
 
+import com.google.common.base.Splitter;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
+import com.google.common.hash.Hashing;
+import com.google.common.io.ByteStreams;
+
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -32,20 +38,26 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Base64;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-
-import com.google.common.collect.Sets;
-import com.google.common.hash.Hashing;
-import com.google.common.io.ByteStreams;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 class AssetCacher {
 
+    private static final Splitter DOT = Splitter.on('.');
+
     private static String assetKey(String key) {
+        Iterable<String> dotSplit = DOT.split(Paths.get(key).getFileName().toString());
+        String ext = Iterables.getLast(
+            StreamSupport.stream(dotSplit.spliterator(), false)
+                .map(e -> "." + e).collect(Collectors.toList()),
+            "");
         byte[] hash = Hashing.sha512().hashString(key, StandardCharsets.UTF_8).asBytes();
-        return Base64.getUrlEncoder().encodeToString(hash);
+        return Base64.getUrlEncoder().encodeToString(hash) + ext;
     }
 
     private final Path cacheDirectory;

@@ -26,6 +26,7 @@ package com.techshroom.lettar.pipe;
 
 import java.util.List;
 
+import com.google.common.collect.ImmutableListMultimap;
 import com.techshroom.lettar.collections.HttpMultimap;
 import com.techshroom.lettar.routing.HttpMethod;
 
@@ -36,7 +37,7 @@ public class RequestKeys {
 
     public static final Key<HttpMethod> method = Key.of("Request.method");
     public static final Key<List<String>> path = Key.of("Request.path");
-    public static final Key<HttpMultimap> queryParts = Key.of("Request.queryParts");
+    public static final Key<ImmutableListMultimap<String, String>> queryParts = Key.of("Request.queryParts");
     public static final Key<HttpMultimap> headers = Key.of("Request.headers");
 
     // enable retrieval of body under any type

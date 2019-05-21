@@ -42,6 +42,7 @@ dependencies {
     api group: 'com.techshroom', name: 'jsr305-plus', version: '0.0.1'
     api group: 'com.google.guava', name: 'guava', version: project.guavaVersion
     implementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'
+    api(group: "org.apache.tika", name: "tika-core", version: "1.20")
 
     aptCompileOnly group: 'com.google.auto.service', name: 'auto-service', version: '1.0-rc4'
     aptCompileOnly group: 'com.google.auto.value', name: 'auto-value', version: '1.5.4'

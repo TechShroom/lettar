@@ -39,6 +39,9 @@ import javax.annotation.Nullable;
 import com.google.common.collect.ImmutableMap;
 import com.techshroom.lettar.Response;
 import com.techshroom.lettar.SimpleResponse;
+import com.techshroom.lettar.util.HttpUtil;
+import org.apache.tika.metadata.HttpHeaders;
+import org.apache.tika.mime.MediaType;
 
 public class FileResponse {
 
@@ -68,7 +71,7 @@ public class FileResponse {
         private final boolean lengthImportant;
         private final boolean attachDisposition;
 
-        private Intent(boolean lengthImportant, boolean attachDisposition) {
+        Intent(boolean lengthImportant, boolean attachDisposition) {
             this.lengthImportant = lengthImportant;
             this.attachDisposition = attachDisposition;
         }
@@ -77,9 +80,9 @@ public class FileResponse {
 
     private InputStream stream;
     private Intent intent;
-    @Nullable
-    private String downloadedFileName;
+    private @Nullable String downloadedFileName;
     private long length = UNKNOWN_LENGTH;
+    private MediaType contentType = MediaType.OCTET_STREAM;
 
     private FileResponse(InputStream stream, Intent intent) {
         this.stream = stream;
@@ -115,20 +118,30 @@ public class FileResponse {
         return length;
     }
 
+    public FileResponse contentType(MediaType contentType) {
+        this.contentType = contentType;
+        return this;
+    }
+
+    public MediaType getContentType() {
+        return contentType;
+    }
+
     public Response<? super InputStream> toStandardResponse() {
-        ImmutableMap.Builder<String, String> headers = ImmutableMap.builder();
+        ImmutableMap.Builder<String, String> headers = HttpUtil.singleHeaderMapBuilder();
         if (intent.attachDisposition) {
-            checkNotNull(downloadedFileName, "File name require for intent %s", intent.name());
-            headers.put("content-disposition", "attachment; filename=\"" + getDownloadedFileName() + "\"");
+            checkNotNull(downloadedFileName, "File name required for intent %s", intent.name());
+            headers.put(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + getDownloadedFileName() + "\"");
         }
         if (getLength() != UNKNOWN_LENGTH) {
-            headers.put("content-length", String.valueOf(getLength()));
+            headers.put(HttpHeaders.CONTENT_LENGTH, String.valueOf(getLength()));
             if (intent.lengthImportant) {
                 // inform further transformations that this should be kept
                 // un-encoded
-                headers.put("content-encoding", "identity");
+                headers.put(HttpHeaders.CONTENT_ENCODING, "identity");
             }
         }
+        headers.put(HttpHeaders.CONTENT_TYPE, getContentType().toString());
         return SimpleResponse.builder()
                 .ok_200()
                 .body(stream)

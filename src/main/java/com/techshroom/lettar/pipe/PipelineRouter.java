@@ -152,7 +152,7 @@ public class PipelineRouter<IB, OB> implements Router<IB, OB> {
     }
 
     private static final String OH_NO_BODY = "A pipeline leaked while handling another error. This is very bad. Contact the nearest developer immediately.\n";
-    private static final HttpMultimap OH_NO_HEADERS = HttpMultimap.copyOf(
+    private static final HttpMultimap OH_NO_HEADERS = HttpMultimap.copyOfSingle(
             ImmutableMap.<String, String> builder()
                     .put("X-BadCode", "true")
                     .put("X-HitchhikerCount", "42")

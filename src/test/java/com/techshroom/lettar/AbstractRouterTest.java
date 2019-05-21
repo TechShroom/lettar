@@ -30,6 +30,7 @@ import static org.junit.Assert.assertEquals;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
+import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.Multimap;
 import com.techshroom.lettar.collections.HttpMultimap;
 import com.techshroom.lettar.routing.HttpMethod;
@@ -49,12 +50,7 @@ public abstract class AbstractRouterTest {
         assertEquals(expected.getBody(), actual.getBody());
         assertEquals(expected.getStatusCode(), actual.getStatusCode());
         // strip content type from headers
-        Multimap<String, String> headers = HttpUtil.headerMapBuilder().putAll(
-                actual.getHeaders().getMultimap().entries().stream()
-                        .filter(e -> !"content-type".equalsIgnoreCase(e.getKey()))
-                        .collect(toImmutableList()))
-                .build();
-        assertEquals(expected.getHeaders().getMultimap(), headers);
+        assertEquals(expected.getHeaders(), actual.getHeaders().remove("content-type"));
     }
 
     protected static Request<String> request(String path) {
@@ -68,7 +64,7 @@ public abstract class AbstractRouterTest {
                 .path(path);
     }
 
-    protected static Request<String> request(String path, HttpMultimap query) {
+    protected static Request<String> request(String path, ImmutableListMultimap<String, String> query) {
         return requestBuilder(path)
                 .queryParts(query)
                 .build();

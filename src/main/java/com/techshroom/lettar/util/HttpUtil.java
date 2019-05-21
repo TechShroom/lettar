@@ -24,8 +24,13 @@
  */
 package com.techshroom.lettar.util;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.ImmutableSortedMap;
+import com.techshroom.lettar.collections.HttpMultimap;
+
+import java.util.List;
 
 /**
  * Utilities for HTTP.
@@ -33,14 +38,40 @@ import com.google.common.collect.ImmutableMap;
 public class HttpUtil {
 
     /**
-     * Creates a special {@link ImmutableMap} builder that creates
+     * Creates a special {@link ImmutableMultimap} builder that creates
      * case-insensitive maps, as required for headers.
-     * 
+     *
+     * <p>
+     * Do <em>not</em> use the resulting map for any further manipulation.
+     * Pass it directly to create a new {@link HttpMultimap}, which will ensure
+     * proper key case checking.
+     * </p>
+     *
      * @return a header map builder
      */
-    public static ImmutableListMultimap.Builder<String, String> headerMapBuilder() {
-        return ImmutableListMultimap.<String, String> builder()
-                .orderKeysBy(String.CASE_INSENSITIVE_ORDER);
+    public static ImmutableListMultimap.Builder<String, String> headerMultimapBuilder() {
+        return ImmutableListMultimap.<String, String>builder()
+            .orderKeysBy(String.CASE_INSENSITIVE_ORDER);
+    }
+
+    /**
+     * Creates a special {@link ImmutableSortedMap} builder that creates
+     * case-insensitive maps, as required for headers.
+     *
+     * @return a header map builder
+     */
+    public static ImmutableSortedMap.Builder<String, ImmutableList<String>> headerMapBuilder() {
+        return ImmutableSortedMap.orderedBy(String.CASE_INSENSITIVE_ORDER);
+    }
+
+    /**
+     * Creates a special {@link ImmutableSortedMap} builder that creates
+     * case-insensitive maps, as required for headers.
+     *
+     * @return a header map builder
+     */
+    public static ImmutableSortedMap.Builder<String, String> singleHeaderMapBuilder() {
+        return ImmutableSortedMap.orderedBy(String.CASE_INSENSITIVE_ORDER);
     }
 
 }

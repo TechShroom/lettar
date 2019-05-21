@@ -24,44 +24,71 @@
  */
 package com.techshroom.lettar.collections;
 
-import java.util.Map;
-import java.util.Optional;
-
 import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableListMultimap;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Multimap;
+import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimaps;
 import com.techshroom.lettar.util.HttpUtil;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.UnaryOperator;
+
+/**
+ * HTTP case-insensitive multiple value map.
+ */
 @AutoValue
 public abstract class HttpMultimap {
 
     public static HttpMultimap of() {
-        // if it's empty, it's always sorted :)
-        return copyOfPreSorted(ImmutableListMultimap.of());
+        return wrap(ImmutableSortedMap.of());
     }
 
-    public static HttpMultimap copyOf(Map<String, String> map) {
-        return copyOfPreSorted(HttpUtil.headerMapBuilder().putAll(map.entrySet()).build());
-    }
-
-    public static HttpMultimap copyOf(Multimap<String, String> map) {
-        if (map instanceof ImmutableListMultimap) {
-            // assume sorted properly
-            return copyOfPreSorted((ImmutableListMultimap<String, String>) map);
+    public static HttpMultimap copyOfSingle(Map<String, String> map) {
+        ImmutableSortedMap.Builder<String, ImmutableList<String>> copy = HttpUtil.headerMapBuilder();
+        for (Map.Entry<String, String> header : map.entrySet()) {
+            copy.put(header.getKey(), ImmutableList.of(header.getValue()));
         }
-        return copyOfPreSorted(HttpUtil.headerMapBuilder().putAll(map).build());
+        return wrap(copy.build());
     }
 
-    public static HttpMultimap copyOfPreSorted(ImmutableListMultimap<String, String> map) {
+    public static HttpMultimap copyOf(ListMultimap<String, String> map) {
+        return copyOf(Multimaps.asMap(map));
+    }
+
+    public static HttpMultimap copyOf(Map<String, ? extends List<String>> map) {
+        if (map instanceof ImmutableSortedMap) {
+            @SuppressWarnings("unchecked")
+            ImmutableSortedMap<String, ? extends List<String>> ism = (ImmutableSortedMap<String, ? extends List<String>>) map;
+            if (ism.comparator() == String.CASE_INSENSITIVE_ORDER
+                && ism.values().stream().allMatch(v -> v instanceof ImmutableList)) {
+                // already validated for immutable. pass to wrap
+                @SuppressWarnings("unchecked")
+                ImmutableSortedMap<String, ImmutableList<String>> ismIl = (ImmutableSortedMap<String, ImmutableList<String>>) ism;
+                return wrap(ismIl);
+            }
+        }
+        ImmutableSortedMap.Builder<String, ImmutableList<String>> copy = HttpUtil.headerMapBuilder();
+        for (Map.Entry<String, ? extends List<String>> header : map.entrySet()) {
+            if (header.getValue().size() > 0) {
+                copy.put(header.getKey(), ImmutableList.copyOf(header.getValue()));
+            }
+        }
+        return wrap(copy.build());
+    }
+
+    private static HttpMultimap wrap(ImmutableSortedMap<String, ImmutableList<String>> map) {
         return new AutoValue_HttpMultimap(map);
     }
 
     HttpMultimap() {
     }
 
-    public abstract ImmutableListMultimap<String, String> getMultimap();
+    abstract ImmutableSortedMap<String, ImmutableList<String>> getMultimap();
 
     public Optional<String> getSingleValue(String key) {
         String value = getSingleValueOrDefault(key, null);
@@ -69,29 +96,57 @@ public abstract class HttpMultimap {
     }
 
     public String getSingleValueOrDefault(String key, String defaultValue) {
-        return Iterables.getFirst(getMultimap().get(key), defaultValue);
+        return Iterables.getFirst(getMultimap().getOrDefault(key, ImmutableList.of()), defaultValue);
+    }
+
+    public HttpMultimap transform(UnaryOperator<ImmutableSortedMap<String, ImmutableList<String>>> change) {
+        ImmutableSortedMap<String, ImmutableList<String>> newList = change.apply(getMultimap());
+        if (getMultimap().equals(newList)) {
+            return this;
+        }
+        return copyOf(newList);
+    }
+
+    private HttpMultimap changeKey(String key, UnaryOperator<ImmutableList<String>> change) {
+        ImmutableSortedMap.Builder<String, ImmutableList<String>> headers = HttpUtil.headerMapBuilder();
+        getMultimap().forEach((k, v) -> {
+            if (!k.equalsIgnoreCase(key)) {
+                headers.put(k, v);
+            }
+        });
+        ImmutableList<String> newValue = change.apply(getMultimap().get(key));
+        if (newValue != null) {
+            headers.put(key, newValue);
+        }
+        return wrap(headers.build());
     }
 
     public HttpMultimap add(String key, String value) {
-        return copyOfPreSorted(HttpUtil.headerMapBuilder()
-                .putAll(getMultimap())
-                .put(key, value)
-                .build());
+        return changeKey(key, v -> v == null
+            ? ImmutableList.of(value)
+            : ImmutableList.<String>builder()
+            .addAll(v)
+            .add(value)
+            .build());
     }
 
     public HttpMultimap set(String key, String value) {
-        return copyOfPreSorted(HttpUtil.headerMapBuilder()
-                .putAll(Multimaps.filterKeys(getMultimap(), k -> !k.equalsIgnoreCase(key)))
-                .put(key, value)
-                .build());
+        return changeKey(key, v -> ImmutableList.of(value));
     }
 
     public HttpMultimap setIfAbsent(String key, String value) {
         if (getMultimap().containsKey(key)) {
             return this;
         }
-        // add is more efficient in this case
-        return add(key, value);
+        return set(key, value);
+    }
+
+    public HttpMultimap remove(String key) {
+        return changeKey(key, v -> null);
+    }
+
+    public ImmutableSet<Map.Entry<String, ImmutableList<String>>> entrySet() {
+        return getMultimap().entrySet();
     }
 
 }

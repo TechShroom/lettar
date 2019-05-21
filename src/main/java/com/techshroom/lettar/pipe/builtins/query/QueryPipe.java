@@ -27,6 +27,7 @@ package com.techshroom.lettar.pipe.builtins.query;
 import java.util.List;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableListMultimap;
 import com.techshroom.lettar.collections.HttpMultimap;
 import com.techshroom.lettar.pipe.FilterPipe;
 import com.techshroom.lettar.pipe.FlowingRequest;
@@ -46,8 +47,8 @@ public class QueryPipe implements FilterPipe {
 
     @Override
     public boolean accepts(FlowingRequest request) {
-        HttpMultimap queryParts = request.getQueryParts();
-        return queryMatcher.stream().anyMatch(qm -> qm.matches(queryParts.getMultimap()));
+        ImmutableListMultimap<String, String> queryParts = request.getQueryParts();
+        return queryMatcher.stream().anyMatch(qm -> qm.matches(queryParts));
     }
 
     @Override

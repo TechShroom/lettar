@@ -26,6 +26,7 @@ package com.techshroom.lettar;
 
 import javax.annotation.Nullable;
 
+import com.google.common.collect.ImmutableListMultimap;
 import com.techshroom.lettar.collections.HttpMultimap;
 import com.techshroom.lettar.routing.HttpMethod;
 
@@ -37,7 +38,7 @@ public interface Request<B> {
 
     String getPath();
 
-    HttpMultimap getQueryParts();
+    ImmutableListMultimap<String, String> getQueryParts();
 
     HttpMultimap getHeaders();
 

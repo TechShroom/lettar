@@ -28,7 +28,14 @@ import com.techshroom.lettar.Response;
 import com.techshroom.lettar.SimpleResponse;
 import com.techshroom.lettar.addons.FileResponse;
 import com.techshroom.lettar.addons.FileResponse.Intent;
+import com.techshroom.lettar.util.Logging;
+import org.apache.tika.detect.DefaultDetector;
+import org.apache.tika.detect.Detector;
+import org.apache.tika.metadata.Metadata;
+import org.apache.tika.mime.MediaType;
+import org.slf4j.Logger;
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -44,15 +51,23 @@ import java.nio.file.Paths;
  */
 public class AssetManager {
 
+    private static final Logger LOGGER = Logging.getLogger();
+
     public static AssetManager create(AssetLookup lookup) {
-        return new AssetManager(lookup);
+        return create(lookup, new DefaultDetector());
+    }
+
+    public static AssetManager create(AssetLookup lookup, Detector detector) {
+        return new AssetManager(lookup, detector);
     }
 
     private final AssetCacher cacher = new AssetCacher();
     private final AssetLookup lookup;
+    private final Detector detector;
 
-    private AssetManager(AssetLookup lookup) {
+    private AssetManager(AssetLookup lookup, Detector detector) {
         this.lookup = lookup;
+        this.detector = detector;
     }
 
     public Response<? super InputStream> getAsset(String path) throws IOException {
@@ -61,9 +76,22 @@ public class AssetManager {
             return SimpleResponse.of(404, path);
         }
         Path file = cacher.cache(asset.getStream(), path);
+        String fileName = Paths.get(path).getFileName().toString();
         return FileResponse.fromDisk(file, Intent.ASSET)
-                .downloadedFileName(Paths.get(path).getFileName().toString())
-                .toStandardResponse();
+            .downloadedFileName(fileName)
+            .contentType(getContentType(file, file.getFileName().toString()))
+            .toStandardResponse();
+    }
+
+    private MediaType getContentType(Path resource, String name) {
+        Metadata metadata = new Metadata();
+        metadata.add(Metadata.RESOURCE_NAME_KEY, name);
+        try (InputStream stream = new BufferedInputStream(Files.newInputStream(resource))) {
+            return detector.detect(stream, metadata);
+        } catch (IOException e) {
+            LOGGER.warn("Returning octet-stream for unknown file type due to I/O error", e);
+            return MediaType.OCTET_STREAM;
+        }
     }
 
 }

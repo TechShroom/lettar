@@ -24,15 +24,14 @@
  */
 package com.techshroom.lettar;
 
+import com.google.auto.value.AutoValue;
+import com.google.common.collect.ListMultimap;
+import com.techshroom.lettar.collections.HttpMultimap;
+
+import javax.annotation.Nullable;
 import java.util.Map;
 import java.util.OptionalInt;
 import java.util.function.UnaryOperator;
-
-import javax.annotation.Nullable;
-
-import com.google.auto.value.AutoValue;
-import com.google.common.collect.Multimap;
-import com.techshroom.lettar.collections.HttpMultimap;
 
 @AutoValue
 public abstract class SimpleResponse<B> implements Response<B> {
@@ -56,10 +55,10 @@ public abstract class SimpleResponse<B> implements Response<B> {
         Builder<B> headers(HttpMultimap headers);
 
         default Builder<B> headers(Map<String, String> headers) {
-            return headers(HttpMultimap.copyOf(headers));
+            return headers(HttpMultimap.copyOfSingle(headers));
         }
 
-        default Builder<B> headers(Multimap<String, String> headers) {
+        default Builder<B> headers(ListMultimap<String, String> headers) {
             return headers(HttpMultimap.copyOf(headers));
         }
 
