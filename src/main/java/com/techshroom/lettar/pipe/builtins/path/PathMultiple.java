@@ -24,6 +24,8 @@
  */
 package com.techshroom.lettar.pipe.builtins.path;
 
+import com.techshroom.lettar.pipe.PipeCompatible;
+
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
@@ -35,6 +37,7 @@ import java.lang.annotation.Target;
 @Documented
 @Retention(RUNTIME)
 @Target({ TYPE, METHOD })
+@PipeCompatible(repeatable = Path.class)
 @interface PathMultiple {
 
     Path[] value();

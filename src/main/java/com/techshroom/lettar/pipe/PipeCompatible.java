@@ -24,14 +24,16 @@
  */
 package com.techshroom.lettar.pipe;
 
-import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import com.techshroom.lettar.inheiritor.Inheritor;
 
+import java.lang.annotation.Annotation;
 import java.lang.annotation.Documented;
+import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-import com.techshroom.lettar.inheiritor.Inheritor;
+import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
  * Indicates that the annotation is intended to be bound to a {@link Pipe}. If,
@@ -47,9 +49,18 @@ public @interface PipeCompatible {
      * Set this to {@code true} if this annotation is not directly consumed, but
      * should instead be checked for {@link PipeCompatible} annotations on
      * itself.
-     * 
+     *
      * @return if this is a meta-PipeCompatible annotation
      */
     boolean metaAnnotation() default false;
+
+    /**
+     * Set this to the original annotation type if this annotation is not
+     * directly consumed, but is an @{@link Repeatable} annotation for another
+     * {@link PipeCompatible} annotation.
+     *
+     * @return if this is a repeatable-PipeCompatible annotation
+     */
+    Class<? extends Annotation> repeatable() default Annotation.class;
 
 }

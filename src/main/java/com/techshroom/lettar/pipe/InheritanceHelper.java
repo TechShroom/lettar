@@ -28,6 +28,7 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import java.lang.annotation.Annotation;
+import java.lang.annotation.Repeatable;
 import java.lang.reflect.AnnotatedElement;
 import java.util.HashMap;
 import java.util.List;
@@ -54,9 +55,9 @@ class InheritanceHelper {
 
     }
 
-    private static List<AnnotationList<?>> interpretAnnotations(Annotation[] annotations) {
+    private static List<AnnotationList<?>> interpretAnnotations(AnnotatedElement element) {
         Map<Class<? extends Annotation>, ImmutableList.Builder<Annotation>> annoMap = new HashMap<>();
-        getPipeAnnotations(annotations).forEach(annotation -> {
+        getPipeAnnotations(element).forEach(annotation -> {
             annoMap.computeIfAbsent(annotation.annotationType(), k -> ImmutableList.builder())
                     .add(annotation);
         });
@@ -64,27 +65,50 @@ class InheritanceHelper {
                 .map(e -> {
                     @SuppressWarnings("unchecked")
                     Class<Annotation> key = (Class<Annotation>) e.getKey();
-                    return new AnnotationList<Annotation>(key, e.getValue().build());
+                    return new AnnotationList<>(key, e.getValue().build());
                 })
                 .collect(toImmutableList());
     }
 
-    private static Stream<Annotation> getPipeAnnotations(Annotation[] annotations) {
-        return Stream.of(annotations)
-                .flatMap(a -> {
-                    PipeCompatible pc = a.annotationType().getAnnotation(PipeCompatible.class);
-                    if (pc == null) {
-                        return Stream.of();
-                    }
-                    if (pc.metaAnnotation()) {
-                        return getPipeAnnotations(a.annotationType().getAnnotations());
-                    }
-                    return Stream.of(a);
-                });
+    private static Stream<Annotation> getPipeAnnotations(AnnotatedElement element) {
+        return Stream.of(element.getAnnotations())
+            // Flatten out @Repeatable annotations
+            .flatMap(a -> {
+                PipeCompatible pc = a.annotationType().getAnnotation(PipeCompatible.class);
+                if (pc == null) {
+                    return Stream.of();
+                }
+                if (pc.repeatable() != Annotation.class) {
+                    Class<? extends Annotation> repeated = pc.repeatable();
+                    Repeatable repeatable = repeated.getAnnotation(Repeatable.class);
+                    checkState(repeatable != null,
+                        "No @Repeatable on a repeatable @PipeCompatible %s", a.annotationType());
+                    Class<? extends Annotation> repeatableContainer = repeatable.value();
+                    checkState(repeatableContainer == a.annotationType(),
+                        "%s is @Repeatable(%s), expected %s",
+                        repeated, repeatableContainer, a.annotationType());
+                    checkState(repeated.isAnnotationPresent(PipeCompatible.class),
+                        "%s is not @PipeCompatible", repeated);
+                    // Get its annotations instead
+                    return Stream.of(element.getAnnotationsByType(repeated));
+                }
+                return Stream.of(a);
+            })
+            // Get all annotations from there
+            .flatMap(a -> {
+                PipeCompatible pc = a.annotationType().getAnnotation(PipeCompatible.class);
+                if (pc == null) {
+                    return Stream.of();
+                }
+                if (pc.metaAnnotation()) {
+                    return getPipeAnnotations(a.annotationType());
+                }
+                return Stream.of(a);
+            });
     }
 
     private static void applyInheritance(InheritorMap inheritanceMap, AnnotatedElement annotated) {
-        List<AnnotationList<?>> annotationLists = interpretAnnotations(annotated.getAnnotations());
+        List<AnnotationList<?>> annotationLists = interpretAnnotations(annotated);
         for (AnnotationList<?> list : annotationLists) {
             applyInheritance(inheritanceMap, list);
         }
