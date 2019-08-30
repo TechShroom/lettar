@@ -24,15 +24,22 @@
  */
 package com.techshroom.lettar.pipe.builtins.method;
 
+import com.techshroom.lettar.pipe.BiPipe;
 import com.techshroom.lettar.pipe.FilterPipe;
 import com.techshroom.lettar.pipe.FlowingRequest;
+import com.techshroom.lettar.pipe.FlowingResponse;
+import com.techshroom.lettar.pipe.Key;
+import com.techshroom.lettar.pipe.ResponseKeys;
+import com.techshroom.lettar.routing.HttpMethod;
 import com.techshroom.lettar.routing.HttpMethodPredicate;
 
-public class MethodPipe implements FilterPipe {
+public class MethodPipe implements FilterPipe, BiPipe {
 
     public static MethodPipe create(HttpMethodPredicate methodMatcher) {
         return new MethodPipe(methodMatcher);
     }
+
+    private static final Key<Boolean> HEAD_AS_GET = Key.of("head-as-get");
 
     private final HttpMethodPredicate methodMatcher;
 
@@ -42,7 +49,34 @@ public class MethodPipe implements FilterPipe {
 
     @Override
     public boolean accepts(FlowingRequest request) {
-        return methodMatcher.matches(request.getMethod());
+        if (methodMatcher.matches(request.getMethod())) {
+            return true;
+        }
+
+        if (request.getMethod() == HttpMethod.HEAD) {
+            // Simulate with GET if needed
+            return methodMatcher.matches(HttpMethod.GET);
+        }
+        return false;
+    }
+
+    @Override
+    public FlowingRequest pipeIn(FlowingRequest request) {
+        // Check if we need to set the "HEAD-as-GET" flag
+        if (request.getMethod() == HttpMethod.HEAD && methodMatcher.matches(HttpMethod.GET)) {
+            return request.with(HEAD_AS_GET, true);
+        }
+        return request;
+    }
+
+    @Override
+    public FlowingResponse pipeOut(FlowingResponse response) {
+        Boolean headAsGet = response.getRequest().get(HEAD_AS_GET);
+        if (headAsGet != null && headAsGet) {
+            // drop the body
+            return response.with(ResponseKeys.body(), null);
+        }
+        return response;
     }
 
     @Override
